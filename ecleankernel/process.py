@@ -4,9 +4,11 @@
 
 import os, os.path
 
+from .lilo import get_lilo_kernels
 from .symlinks import get_vmlinuz_symlinks
 
 bootloaders = (
+	('lilo', get_lilo_kernels),
 	('symlinks', get_vmlinuz_symlinks),
 )
 
