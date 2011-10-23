@@ -5,5 +5,8 @@
 import os.path
 
 def get_vmlinuz_symlinks():
-	for p in ('/boot/vmlinuz', '/boot/vmlinuz.old'):
-		yield os.path.realpath(p)
+	for fn in ('vmlinuz', 'vmlinux', 'kernel', 'bzImage'):
+		for suffix in ('', '.old'):
+			f = '/boot/%s%s' % (fn, suffix)
+			if os.path.exists(f):
+				yield f
