@@ -7,6 +7,14 @@ from .process import get_removal_list
 
 def main(argv):
 	k = find_kernels()
-	print get_removal_list(k)
+	removals = get_removal_list(k)
+
+	if removals:
+		print('These are the kernels which will be removed:')
+	else:
+		print('No outdated kernels found.')
+
+	for k, reason in removals:
+		print('- %s: %s' % (k.version, ', '.join(reason)))
 
 	return 0
