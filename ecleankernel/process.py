@@ -27,7 +27,7 @@ def remove_stray(kernels):
 		if k.vmlinuz is None:
 			yield k
 
-def get_removal_list(kernels, destructive = False, bootloader = 'auto'):
+def get_removal_list(kernels, limit = 0, bootloader = 'auto'):
 	""" Get a list of outdated kernels to remove. With explanations. """
 
 	out = RemovedKernelDict()
@@ -36,7 +36,7 @@ def get_removal_list(kernels, destructive = False, bootloader = 'auto'):
 	if len(out) == len(kernels):
 		raise SystemError('No vmlinuz found. This seems ridiculous, aborting.')
 
-	if destructive:
+	if limit is None or limit > 0:
 		used = ()
 		for bl, getfunc in bootloaders:
 			if bootloader in ('auto', bl):
@@ -62,6 +62,8 @@ def get_removal_list(kernels, destructive = False, bootloader = 'auto'):
 					print('Note: strangely named used kernel (%s)' % fn)
 
 		used = frozenset(unprefixify(realpaths))
+		if limit is not None:
+			raise NotImplementedError('Limiting number of removed kernels not supported yet')
 		for k in kernels:
 			if k.version not in used:
 				out.add(k, 'not referenced by bootloader (%s)' % lastbl)

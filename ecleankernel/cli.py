@@ -9,19 +9,21 @@ from .process import get_removal_list
 
 def main(argv):
 	parser = OptionParser()
+	parser.add_option('-a', '--all',
+			dest='all', action='store_true', default=False,
+			help='Remove all kernels unless used by bootloader')
 	parser.add_option('-b', '--bootloader',
 			dest='bootloader', default='auto',
-			help='Bootloader used for --destructive (auto, lilo, symlinks)')
-	parser.add_option('-d', '--destructive',
-			dest='destructive', action='store_true', default=False,
-			help='Destructive mode: remove all kernels unless used by bootloader')
+			help='Bootloader used (auto, lilo, symlinks)')
 	parser.add_option('-p', '--pretend',
 			dest='pretend', action='store_true', default=False,
 			help='Print the list of kernels to be removed and exit')
 	(opts, args) = parser.parse_args(argv[1:])
 
 	kernels = find_kernels()
-	removals = get_removal_list(kernels, opts.destructive, opts.bootloader)
+	removals = get_removal_list(kernels,
+			limit = None if opts.all else 0,
+			bootloader = opts.bootloader)
 
 	if not removals:
 		print('No outdated kernels found.')
