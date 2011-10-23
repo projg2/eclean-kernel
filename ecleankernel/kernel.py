@@ -34,15 +34,15 @@ class KernelDict(defaultdict):
 def find_kernels():
 	""" Find all files and directories related to installed kernels. """
 
-	globs = {
-		'vmlinuz': '/boot/vmlinuz-',
-		'systemmap': '/boot/System.map-',
-		'config': '/boot/config-',
-		'modules': '/lib/modules/'
-	}
+	globs = (
+		('vmlinuz', '/boot/vmlinuz-'),
+		('systemmap', '/boot/System.map-'),
+		('config', '/boot/config-'),
+		('modules', '/lib/modules/')
+	)
 
 	kernels = KernelDict()
-	for cat, g in globs.items():
+	for cat, g in globs:
 		for m in glob('%s*' % g):
 			kv = m[len(g):]
 			setattr(kernels[kv], cat, m)
