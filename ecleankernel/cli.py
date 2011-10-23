@@ -15,6 +15,9 @@ def main(argv):
 	parser.add_option('-b', '--bootloader',
 			dest='bootloader', default='auto',
 			help='Bootloader used (auto, lilo, symlinks)')
+	parser.add_option('-d', '--destructive',
+			dest='destructive', action='store_true', default=False,
+			help='Destructive mode: remove kernels even when referenced by bootloader')
 	parser.add_option('-p', '--pretend',
 			dest='pretend', action='store_true', default=False,
 			help='Print the list of kernels to be removed and exit')
@@ -23,7 +26,8 @@ def main(argv):
 	kernels = find_kernels()
 	removals = get_removal_list(kernels,
 			limit = None if opts.all else 0,
-			bootloader = opts.bootloader)
+			bootloader = opts.bootloader,
+			destructive = opts.destructive)
 
 	if not removals:
 		print('No outdated kernels found.')

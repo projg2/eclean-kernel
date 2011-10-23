@@ -27,7 +27,7 @@ def remove_stray(kernels):
 		if k.vmlinuz is None:
 			yield k
 
-def get_removal_list(kernels, limit = 0, bootloader = 'auto'):
+def get_removal_list(kernels, limit = 0, bootloader = 'auto', destructive = False):
 	""" Get a list of outdated kernels to remove. With explanations. """
 
 	out = RemovedKernelDict()
@@ -37,35 +37,39 @@ def get_removal_list(kernels, limit = 0, bootloader = 'auto'):
 		raise SystemError('No vmlinuz found. This seems ridiculous, aborting.')
 
 	if limit is None or limit > 0:
-		used = ()
-		for bl, getfunc in bootloaders:
-			if bootloader in ('auto', bl):
-				try:
-					used = getfunc()
-				except Exception:
-					pass
-				else:
-					lastbl = bl
-					break
+		if not destructive:
+			used = ()
+			for bl, getfunc in bootloaders:
+				if bootloader in ('auto', bl):
+					try:
+						used = getfunc()
+					except Exception:
+						pass
+					else:
+						lastbl = bl
+						break
 
-		realpaths = [os.path.realpath(x) for x in used]
-		if not realpaths:
-			raise SystemError('Unable to get kernels from bootloader config (%s)'
-					% bootloader)
+			realpaths = [os.path.realpath(x) for x in used]
+			if not realpaths:
+				raise SystemError('Unable to get kernels from bootloader config (%s)'
+						% bootloader)
 
-		prefix = '/boot/vmlinuz-'
-		def unprefixify(filenames):
-			for fn in filenames:
-				if fn.startswith(prefix):
-					yield fn[len(prefix):]
-				else:
-					print('Note: strangely named used kernel (%s)' % fn)
+			prefix = '/boot/vmlinuz-'
+			def unprefixify(filenames):
+				for fn in filenames:
+					if fn.startswith(prefix):
+						yield fn[len(prefix):]
+					else:
+						print('Note: strangely named used kernel (%s)' % fn)
 
-		used = frozenset(unprefixify(realpaths))
+			used = frozenset(unprefixify(realpaths))
+
 		if limit is not None:
 			raise NotImplementedError('Limiting number of removed kernels not supported yet')
 		for k in kernels:
-			if k.version not in used:
+			if destructive:
+				out.add(k, 'unwanted')
+			elif k.version not in used:
 				out.add(k, 'not referenced by bootloader (%s)' % lastbl)
 
 	current = os.uname()[2]
