@@ -119,6 +119,14 @@ def find_kernels():
 			path = PathRef(m)
 			setattr(kernels[kv], cat, path)
 			if cat == 'modules' and '%s.old' % kv in kernels:
-				kernels['%s.old' % kv].modules = path
+				# modules are not renamed to .old
+				oldk = kernels['%s.old' % kv]
+				newk = kernels[kv]
+				oldk.modules = path
+				# it seems that these are renamed .old sometimes
+				if oldk.systemmap is None:
+					oldk.systemmap = newk.systemmap
+				if oldk.config is None:
+					oldk.config = newk.config
 
 	return kernels
