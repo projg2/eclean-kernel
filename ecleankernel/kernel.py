@@ -90,6 +90,9 @@ class KernelDict(defaultdict):
 		self[kv].unrefall()
 		defaultdict.__delitem__(self, kv)
 
+	def __iter__(self):
+		return iter(self.values())
+
 	def __repr__(self):
 		return 'KernelDict(%s)' % ','.join(['\n\t%s' % repr(x) for x in self.values()])
 
