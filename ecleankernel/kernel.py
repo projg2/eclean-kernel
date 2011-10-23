@@ -46,5 +46,7 @@ def find_kernels():
 		for m in glob('%s*' % g):
 			kv = m[len(g):]
 			setattr(kernels[kv], cat, m)
+			if cat == 'modules' and '%s.old' % kv in kernels:
+				kernels['%s.old' % kv].modules = m
 
 	return kernels
