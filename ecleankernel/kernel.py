@@ -107,6 +107,9 @@ def find_kernels():
 
 	globs = (
 		('vmlinuz', '/boot/vmlinuz-'),
+		('vmlinuz', '/boot/vmlinux-'),
+		('vmlinuz', '/boot/kernel-'),
+		('vmlinuz', '/boot/bzImage-'),
 		('systemmap', '/boot/System.map-'),
 		('config', '/boot/config-'),
 		('modules', '/lib/modules/')
