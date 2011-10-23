@@ -25,6 +25,8 @@ def get_removal_list(kernels):
 	out = RemovedKernelDict()
 	for k in remove_stray(kernels):
 		out.add(k, 'vmlinuz does not exist')
+	if len(out) == len(kernels):
+		raise SystemError('No vmlinuz found. This seems ridiculous, aborting.')
 
 	current = os.uname()[2]
 
