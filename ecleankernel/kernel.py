@@ -6,6 +6,18 @@ from collections import defaultdict
 from functools import partial
 from glob import glob
 
+class PathRef(str):
+	def __init__(self, *args, **kwargs):
+		self._refs = 0
+
+	def ref(self):
+		self._refs += 1
+
+	def unref(self):
+		self._refs -= 1
+		if not self._refs:
+			raise NotImplementedError('All refs gone, remove: %s' % self)
+
 def OnceProperty(f):
 	def _get(propname, self):
 		try:
@@ -16,10 +28,16 @@ def OnceProperty(f):
 	def _set(propname, self, val):
 		if hasattr(self, propname):
 			raise KeyError('Value for %s already set' % propname)
+		val.ref()
 		return setattr(self, propname, val)
 
+	def _del(propname, self):
+		if hasattr(self, propname):
+			getattr(self, propname).unref()
+
 	attrname = '_%s' % f.__name__
-	return property(partial(_get, attrname), partial(_set, attrname))
+	funcs = [partial(x, attrname) for x in (_get, _set, _del)]
+	return property(*funcs)
 
 class Kernel(object):
 	""" An object representing a single kernel version. """
@@ -47,6 +65,12 @@ class Kernel(object):
 	def modules(self):
 		pass
 
+	def unrefall(self):
+		del self.vmlinuz
+		del self.systemmap
+		del self.config
+		del self.modules
+
 	def __repr__(self):
 		return "Kernel(%s, '%s%s%s%s')" % (repr(self.version),
 				'V' if self.vmlinuz else ' ',
@@ -59,6 +83,12 @@ class KernelDict(defaultdict):
 		k = Kernel(kv)
 		self[kv] = k
 		return k
+
+	def __delitem__(self, kv):
+		if kv not in self:
+			raise KeyError(kv)
+		self[kv].unrefall()
+		defaultdict.__delitem__(self, kv)
 
 	def __repr__(self):
 		return 'KernelDict(%s)' % ','.join(['\n\t%s' % repr(x) for x in self.values()])
@@ -77,8 +107,9 @@ def find_kernels():
 	for cat, g in globs:
 		for m in glob('%s*' % g):
 			kv = m[len(g):]
-			setattr(kernels[kv], cat, m)
+			path = PathRef(m)
+			setattr(kernels[kv], cat, path)
 			if cat == 'modules' and '%s.old' % kv in kernels:
-				kernels['%s.old' % kv].modules = m
+				kernels['%s.old' % kv].modules = path
 
 	return kernels
