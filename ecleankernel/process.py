@@ -2,6 +2,8 @@
 # (c) 2010 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
+import os
+
 class RemovedKernelDict(dict):
 	def add(self, k, reason):
 		if k not in self:
@@ -23,4 +25,13 @@ def get_removal_list(kernels):
 	out = RemovedKernelDict()
 	for k in remove_stray(kernels):
 		out.add(k, 'vmlinuz does not exist')
-	return out
+
+	current = os.uname()[2]
+
+	def not_current(kre):
+		if kre[0].version == current:
+			print('Preserving currently running kernel (%s)' % current)
+			return False
+		return True
+
+	return filter(not_current, out)
