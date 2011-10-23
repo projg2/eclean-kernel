@@ -2,6 +2,8 @@
 # (c) 2010 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
+import os, os.path, shutil
+
 from collections import defaultdict
 from functools import partial
 from glob import glob
@@ -16,7 +18,11 @@ class PathRef(str):
 	def unref(self):
 		self._refs -= 1
 		if not self._refs:
-			raise NotImplementedError('All refs gone, remove: %s' % self)
+			print('- %s' % self)
+			if os.path.isdir(self):
+				shutil.rmtree(self)
+			else:
+				os.unlink(self)
 
 def OnceProperty(f):
 	def _get(propname, self):
