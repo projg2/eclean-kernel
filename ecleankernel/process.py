@@ -59,11 +59,14 @@ def get_removal_list(kernels, limit = 0, bootloader = 'auto', destructive = Fals
 			prefix = re.compile(r'^/boot/(vmlinu[xz]|kernel|bzImage)-')
 			def unprefixify(filenames):
 				for fn in filenames:
-					kv, numsubs = prefix.subn('', fn)
-					if numsubs == 1:
-						yield kv
+					if not os.path.exists(fn):
+						print('Note: referenced kernel does not exist: %s' % fn)
 					else:
-						print('Note: strangely named used kernel (%s)' % fn)
+						kv, numsubs = prefix.subn('', fn)
+						if numsubs == 1:
+							yield kv
+						else:
+							print('Note: strangely named used kernel: %s' % fn)
 
 			used = frozenset(unprefixify(realpaths))
 
