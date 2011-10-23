@@ -18,6 +18,9 @@ def main(argv):
 	parser.add_option('-d', '--destructive',
 			dest='destructive', action='store_true', default=False,
 			help='Destructive mode: remove kernels even when referenced by bootloader')
+	parser.add_option('-n', '--num',
+			dest='num', type='int', default=0,
+			help='Leave only newest NUM kernels')
 	parser.add_option('-p', '--pretend',
 			dest='pretend', action='store_true', default=False,
 			help='Print the list of kernels to be removed and exit')
@@ -25,7 +28,7 @@ def main(argv):
 
 	kernels = find_kernels()
 	removals = get_removal_list(kernels,
-			limit = None if opts.all else 0,
+			limit = None if opts.all else opts.num,
 			bootloader = opts.bootloader,
 			destructive = opts.destructive)
 

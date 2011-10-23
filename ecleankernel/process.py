@@ -65,8 +65,15 @@ def get_removal_list(kernels, limit = 0, bootloader = 'auto', destructive = Fals
 			used = frozenset(unprefixify(realpaths))
 
 		if limit is not None:
-			raise NotImplementedError('Limiting number of removed kernels not supported yet')
-		for k in kernels:
+			def getmtime(k):
+				return os.path.getmtime(k.vmlinuz)
+
+			ordered = sorted(kernels, key = getmtime, reverse = True)
+			candidates = ordered[limit:]
+		else:
+			candidates = kernels
+
+		for k in candidates:
 			if destructive:
 				out.add(k, 'unwanted')
 			elif k.version not in used:
