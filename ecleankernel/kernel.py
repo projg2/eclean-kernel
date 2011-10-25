@@ -90,6 +90,13 @@ class Kernel(object):
 				'M' if self.modules else ' ',
 				'B' if self.build else ' ')
 
+class PathDict(defaultdict):
+	def __missing__(self, path):
+		path = os.path.realpath(path)
+		if path not in self:
+			self[path] = PathRef(path)
+		return self[path]
+
 class KernelDict(defaultdict):
 	def __missing__(self, kv):
 		k = Kernel(kv)
@@ -121,15 +128,18 @@ def find_kernels():
 		('modules', '/lib/modules/')
 	)
 
+	# paths can repeat, so keep them sorted
+	paths = PathDict()
+
 	kernels = KernelDict()
 	for cat, g in globs:
 		for m in glob('%s*' % g):
 			kv = m[len(g):]
-			path = PathRef(m)
+			path = paths[m]
 			newk = kernels[kv]
 			setattr(newk, cat, path)
 			if cat == 'modules':
-				newk.build = PathRef(os.path.join(m, 'build'))
+				newk.build = paths[os.path.join(m, 'build')]
 				if '%s.old' % kv in kernels:
 					# modules are not renamed to .old
 					oldk = kernels['%s.old' % kv]
