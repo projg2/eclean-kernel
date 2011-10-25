@@ -6,11 +6,13 @@ import os, os.path, re
 
 from .grub import get_grub_kernels
 from .lilo import get_lilo_kernels
+from .yaboot import get_yaboot_kernels
 from .symlinks import get_vmlinuz_symlinks
 
 bootloaders = (
 	('lilo', get_lilo_kernels),
 	('grub', get_grub_kernels),
+	('yaboot', get_yaboot_kernels),
 	('symlinks', get_vmlinuz_symlinks),
 )
 
