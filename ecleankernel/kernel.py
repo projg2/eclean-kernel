@@ -71,18 +71,24 @@ class Kernel(object):
 	def modules(self):
 		pass
 
+	@OnceProperty
+	def build(self):
+		pass
+
 	def unrefall(self):
 		del self.vmlinuz
 		del self.systemmap
 		del self.config
 		del self.modules
+		del self.build
 
 	def __repr__(self):
-		return "Kernel(%s, '%s%s%s%s')" % (repr(self.version),
+		return "Kernel(%s, '%s%s%s%s%s')" % (repr(self.version),
 				'V' if self.vmlinuz else ' ',
 				'S' if self.systemmap else ' ',
 				'C' if self.config else ' ',
-				'M' if self.modules else ' ')
+				'M' if self.modules else ' ',
+				'B' if self.build else ' ')
 
 class KernelDict(defaultdict):
 	def __missing__(self, kv):
@@ -120,16 +126,19 @@ def find_kernels():
 		for m in glob('%s*' % g):
 			kv = m[len(g):]
 			path = PathRef(m)
-			setattr(kernels[kv], cat, path)
-			if cat == 'modules' and '%s.old' % kv in kernels:
-				# modules are not renamed to .old
-				oldk = kernels['%s.old' % kv]
-				newk = kernels[kv]
-				oldk.modules = path
-				# it seems that these are renamed .old sometimes
-				if oldk.systemmap is None:
-					oldk.systemmap = newk.systemmap
-				if oldk.config is None:
-					oldk.config = newk.config
+			newk = kernels[kv]
+			setattr(newk, cat, path)
+			if cat == 'modules':
+				newk.build = PathRef(os.path.join(m, 'build'))
+				if '%s.old' % kv in kernels:
+					# modules are not renamed to .old
+					oldk = kernels['%s.old' % kv]
+					oldk.modules = path
+					oldk.build = newk.build
+					# it seems that these are renamed .old sometimes
+					if oldk.systemmap is None:
+						oldk.systemmap = newk.systemmap
+					if oldk.config is None:
+						oldk.config = newk.config
 
 	return kernels
