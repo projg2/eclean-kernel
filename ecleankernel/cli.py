@@ -46,6 +46,9 @@ def main(argv):
 			print('- %s: %s' % (k.version, ', '.join(reason)))
 	else:
 		for k, reason in removals:
+			k.check_writable()
+
+		for k, reason in removals:
 			print('* Removing kernel %s (%s)' % (k.version, ', '.join(reason)))
 			del kernels[k.version]
 

@@ -9,7 +9,8 @@ from functools import partial
 from glob import glob
 
 class PathRef(str):
-	def __init__(self, *args, **kwargs):
+	def __init__(self, path):
+		str.__init__(self, path)
 		self._refs = 0
 
 	def ref(self):
@@ -81,6 +82,12 @@ class Kernel(object):
 		del self.config
 		del self.modules
 		del self.build
+
+	def check_writable(self):
+		for path in (self.vmlinuz, self.systemmap, self.config,
+				self.modules, self.build):
+			if not os.access(path, os.W_OK):
+				raise OSError('%s not writable, refusing to proceed' % path)
 
 	def __repr__(self):
 		return "Kernel(%s, '%s%s%s%s%s')" % (repr(self.version),
