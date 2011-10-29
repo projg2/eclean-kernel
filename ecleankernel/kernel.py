@@ -86,7 +86,7 @@ class Kernel(object):
 	def check_writable(self):
 		for path in (self.vmlinuz, self.systemmap, self.config,
 				self.modules, self.build):
-			if path is not None and not os.access(path, os.W_OK):
+			if path and not os.access(path, os.W_OK):
 				raise OSError('%s not writable, refusing to proceed' % path)
 
 	def __repr__(self):
@@ -153,11 +153,12 @@ def find_kernels():
 					# modules are not renamed to .old
 					oldk = kernels['%s.old' % kv]
 					oldk.modules = path
-					oldk.build = newk.build
+					if newk.build:
+						oldk.build = newk.build
 					# it seems that these are renamed .old sometimes
-					if oldk.systemmap is None:
+					if not oldk.systemmap and newk.systemmap:
 						oldk.systemmap = newk.systemmap
-					if oldk.config is None:
+					if not oldk.config and newk.config:
 						oldk.config = newk.config
 
 	return kernels
