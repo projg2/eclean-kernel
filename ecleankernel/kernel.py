@@ -86,7 +86,7 @@ class Kernel(object):
 	def check_writable(self):
 		for path in (self.vmlinuz, self.systemmap, self.config,
 				self.modules, self.build):
-			if not os.access(path, os.W_OK):
+			if path is not None and not os.access(path, os.W_OK):
 				raise OSError('%s not writable, refusing to proceed' % path)
 
 	def __repr__(self):
