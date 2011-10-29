@@ -99,4 +99,4 @@ def get_removal_list(kernels, limit = 0, bootloader = 'auto', destructive = Fals
 			return False
 		return True
 
-	return filter(not_current, out)
+	return list(filter(not_current, out))
