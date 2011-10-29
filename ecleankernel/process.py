@@ -48,10 +48,12 @@ def get_removal_list(kernels, limit = 0, bootloader = 'auto', destructive = Fals
 				if bootloader in ('auto', bl):
 					if debug:
 						print('** Trying bootloader %s' % bl)
-					used = getfunc(debug = debug)
-					lastbl = bl
-					if used:
-						print('*** Bootloader returned kernels')
+					try:
+						used = getfunc(debug = debug)
+					except Exception:
+						pass
+					else:
+						lastbl = bl
 						break
 
 			realpaths = [os.path.realpath(x) for x in used]
