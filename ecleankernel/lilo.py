@@ -9,6 +9,12 @@ def get_lilo_kernels(debug = False):
 			re.MULTILINE | re.IGNORECASE)
 
 	f = open('/etc/lilo.conf')
-	for m in kernel_re.finditer(f.read()):
-		yield m.group(1)
-	f.close()
+
+	def _get_kernels(f):
+		try:
+			for m in kernel_re.finditer(f.read()):
+				yield m.group(1)
+		finally:
+			f.close()
+
+	return _get_kernels(f)

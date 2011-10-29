@@ -10,14 +10,20 @@ def get_grub_kernels(debug = False):
 
 	f = open('/boot/grub/grub.conf')
 	if debug:
-		print('*** grub.conf %sfound' % ('' if f else 'not '))
-	for m in kernel_re.finditer(f.read()):
-		path = m.group(1)
-		if debug:
-			print('**** regexp matched path %s' % path)
-			print('     from line: %s' % m.group(0))
-		if os.path.relpath(path, '/boot').startswith('..'):
-			path = os.path.join('/boot', path)
-			print('***** appending /boot, path now: %s' % path)
-		yield path
-	f.close()
+		print('*** grub.conf found')
+
+	def _get_kernels(f):
+		try:
+			for m in kernel_re.finditer(f.read()):
+				path = m.group(1)
+				if debug:
+					print('**** regexp matched path %s' % path)
+					print('     from line: %s' % m.group(0))
+				if os.path.relpath(path, '/boot').startswith('..'):
+					path = os.path.join('/boot', path)
+					print('***** appending /boot, path now: %s' % path)
+				yield path
+		finally:
+			f.close()
+
+	return _get_kernels(f)
