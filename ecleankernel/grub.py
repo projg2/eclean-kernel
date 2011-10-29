@@ -20,7 +20,7 @@ def get_grub_kernels(debug = False):
 					print('**** regexp matched path %s' % path)
 					print('     from line: %s' % m.group(0))
 				if os.path.relpath(path, '/boot').startswith('..'):
-					path = os.path.join('/boot', path)
+					path = os.path.join('/boot', os.path.relpath(path, '/'))
 					print('***** appending /boot, path now: %s' % path)
 				yield path
 		finally:
