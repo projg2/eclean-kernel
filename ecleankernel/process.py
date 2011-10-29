@@ -2,6 +2,8 @@
 # (c) 2010 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
+from __future__ import print_function
+
 import errno, os, os.path, re
 
 from .grub import get_grub_kernels
@@ -29,11 +31,10 @@ def remove_stray(kernels):
 		if k.vmlinuz is None:
 			yield k
 
-def get_removal_list(kernels, limit = 0, bootloader = 'auto', destructive = False, debug = False):
+def get_removal_list(kernels, debug, limit = 0, bootloader = 'auto', destructive = False):
 	""" Get a list of outdated kernels to remove. With explanations. """
 
-	if debug:
-		print('* In get_removal_list()')
+	debug.indent(heading = 'In get_removal_list()')
 
 	out = RemovedKernelDict()
 	for k in remove_stray(kernels):
@@ -46,10 +47,11 @@ def get_removal_list(kernels, limit = 0, bootloader = 'auto', destructive = Fals
 			used = ()
 			for bl, getfunc in bootloaders:
 				if bootloader in ('auto', bl):
-					if debug:
-						print('** Trying bootloader %s' % bl)
+					debug.printf('Trying bootloader %s', bl)
 					try:
+						debug.indent()
 						used = getfunc(debug = debug)
+						debug.outdent()
 					except IOError as e:
 						if e.errno != errno.ENOENT:
 							raise
@@ -99,4 +101,5 @@ def get_removal_list(kernels, limit = 0, bootloader = 'auto', destructive = Fals
 			return False
 		return True
 
+	debug.outdent()
 	return list(filter(not_current, out))

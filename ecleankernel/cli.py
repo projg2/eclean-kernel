@@ -2,6 +2,8 @@
 # (c) 2010 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
+from __future__ import print_function
+
 from optparse import OptionParser
 
 from .kernel import find_kernels
@@ -11,6 +13,29 @@ ecleankern_desc = '''
 Remove old kernel versions, keeping either N newest kernels (with -n)
 or only those which are referenced by a bootloader (with -a).
 '''
+
+class NullDebugger(object):
+	def __init__(self):
+		self._indent = 1
+
+	def print(self, msg):
+		pass
+
+	def printf(self, fstr, *args):
+		self.print(fstr % args)
+
+	def indent(self, n = 1, heading = None):
+		if heading is not None:
+			self.print(heading)
+		self._indent += n
+
+	def outdent(self, n = 1):
+		self._indent -= n
+
+class ConsoleDebugger(NullDebugger):
+	def print(self, msg):
+		ind = '*' * self._indent
+		print('%s %s' % (ind, msg))
 
 def main(argv):
 	parser = OptionParser(description = ecleankern_desc.strip())
@@ -34,12 +59,14 @@ def main(argv):
 			help='Print the list of kernels to be removed and exit')
 	(opts, args) = parser.parse_args(argv[1:])
 
+	debug = ConsoleDebugger() if opts.debug else NullDebugger()
+
 	kernels = find_kernels()
 	removals = get_removal_list(kernels,
 			limit = None if opts.all else opts.num,
 			bootloader = opts.bootloader,
 			destructive = opts.destructive,
-			debug = opts.debug)
+			debug = debug)
 
 	if not removals:
 		print('No outdated kernels found.')
