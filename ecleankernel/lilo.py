@@ -6,7 +6,7 @@ import re
 
 from .util import open_if_exists
 
-def get_lilo_kernels():
+def get_lilo_kernels(debug = False):
 	kernel_re = re.compile(r'^\s*image\s*=\s*(.+)\s*$',
 			re.MULTILINE | re.IGNORECASE)
 

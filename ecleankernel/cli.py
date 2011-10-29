@@ -23,6 +23,9 @@ def main(argv):
 	parser.add_option('-d', '--destructive',
 			dest='destructive', action='store_true', default=False,
 			help='Destructive mode: remove kernels even when referenced by bootloader')
+	parser.add_option('-D', '--debug',
+			dest='debug', action='store_true', default=False,
+			help='Enable debugging output')
 	parser.add_option('-n', '--num',
 			dest='num', type='int', default=0,
 			help='Leave only newest NUM kernels (by mtime)')
@@ -35,7 +38,8 @@ def main(argv):
 	removals = get_removal_list(kernels,
 			limit = None if opts.all else opts.num,
 			bootloader = opts.bootloader,
-			destructive = opts.destructive)
+			destructive = opts.destructive,
+			debug = opts.debug)
 
 	if not removals:
 		print('No outdated kernels found.')
