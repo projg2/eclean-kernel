@@ -42,6 +42,9 @@ def main(argv):
 	parser.add_option('-a', '--all',
 			dest='all', action='store_true', default=False,
 			help='Remove all kernels unless used by bootloader')
+	parser.add_option('-A', '--ask',
+			dest='ask', action='store_true', default=False,
+			help='Ask before removing each kernel')
 	parser.add_option('-b', '--bootloader',
 			dest='bootloader', default='auto',
 			help='Bootloader used (auto, grub, lilo, symlinks)')
@@ -80,7 +83,20 @@ def main(argv):
 			k.check_writable()
 
 		for k, reason in removals:
-			print('* Removing kernel %s (%s)' % (k.version, ', '.join(reason)))
-			del kernels[k.version]
+			remove = True
+			while opts.ask:
+				ans = raw_input('Remove %s (%s)? [Yes/No]'
+						% (k.version, ', '.join(reason))).lower()
+				if 'yes'.startswith(ans):
+					break
+				elif 'no'.startswith(ans):
+					remove = False
+					break
+				else:
+					print('Invalid answer (%s).' % ans)
+
+			if remove:
+				print('* Removing kernel %s (%s)' % (k.version, ', '.join(reason)))
+				del kernels[k.version]
 
 	return 0
