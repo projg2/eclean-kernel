@@ -4,23 +4,20 @@
 
 import os.path, re
 
-from .util import open_if_exists
-
 def get_grub_kernels(debug = False):
 	kernel_re = re.compile(r'^\s*kernel\s*(\S+)',
 			re.MULTILINE | re.IGNORECASE)
 
-	f = open_if_exists('/boot/grub/grub.conf')
+	f = open('/boot/grub/grub.conf')
 	if debug:
 		print('*** grub.conf %sfound' % ('' if f else 'not '))
-	if f:
-		for m in kernel_re.finditer(f.read()):
-			path = m.group(1)
-			if debug:
-				print('**** regexp matched path %s' % path)
-				print('     from line: %s' % m.group(0))
-			if os.path.relpath(path, '/boot').startswith('..'):
-				path = os.path.join('/boot', path)
-				print('***** appending /boot, path now: %s' % path)
-			yield path
-		f.close()
+	for m in kernel_re.finditer(f.read()):
+		path = m.group(1)
+		if debug:
+			print('**** regexp matched path %s' % path)
+			print('     from line: %s' % m.group(0))
+		if os.path.relpath(path, '/boot').startswith('..'):
+			path = os.path.join('/boot', path)
+			print('***** appending /boot, path now: %s' % path)
+		yield path
+	f.close()

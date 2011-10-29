@@ -4,14 +4,11 @@
 
 import re
 
-from .util import open_if_exists
-
 def get_lilo_kernels(debug = False):
 	kernel_re = re.compile(r'^\s*image\s*=\s*(.+)\s*$',
 			re.MULTILINE | re.IGNORECASE)
 
-	f = open_if_exists('/etc/lilo.conf')
-	if f:
-		for m in kernel_re.finditer(f.read()):
-			yield m.group(1)
-		f.close()
+	f = open('/etc/lilo.conf')
+	for m in kernel_re.finditer(f.read()):
+		yield m.group(1)
+	f.close()
