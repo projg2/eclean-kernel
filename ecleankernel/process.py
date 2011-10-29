@@ -2,7 +2,7 @@
 # (c) 2010 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
-import os, os.path, re
+import errno, os, os.path, re
 
 from .grub import get_grub_kernels
 from .lilo import get_lilo_kernels
@@ -50,8 +50,9 @@ def get_removal_list(kernels, limit = 0, bootloader = 'auto', destructive = Fals
 						print('** Trying bootloader %s' % bl)
 					try:
 						used = getfunc(debug = debug)
-					except Exception:
-						pass
+					except IOError as e:
+						if e.errno != errno.ENOENT:
+							raise
 					else:
 						lastbl = bl
 						break
