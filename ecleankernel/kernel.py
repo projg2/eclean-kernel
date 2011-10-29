@@ -148,7 +148,7 @@ def find_kernels():
 			if cat == 'modules':
 				builddir = paths[os.path.join(m, 'build')]
 				if os.path.isdir(builddir):
-					oldk.build = builddir
+					newk.build = builddir
 				if '%s.old' % kv in kernels:
 					# modules are not renamed to .old
 					oldk = kernels['%s.old' % kv]
