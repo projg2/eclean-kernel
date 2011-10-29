@@ -2,7 +2,7 @@
 # (c) 2010 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
-import re
+import os.path, re
 
 from .util import open_if_exists
 
@@ -13,5 +13,8 @@ def get_grub_kernels():
 	f = open_if_exists('/boot/grub/grub.conf')
 	if f:
 		for m in kernel_re.finditer(f.read()):
-			yield m.group(1)
+			path = m.group(1)
+			if os.path.relpath(path, '/boot').startswith('..'):
+				path = os.path.join('/boot', path)
+			yield path
 		f.close()
