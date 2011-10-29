@@ -24,7 +24,7 @@ setup(
 		scripts = ['eclean-kernel'],
 
 		classifiers = [
-			'Development Status :: 3 - Alpha',
+			'Development Status :: 4 - Beta',
 			'Environment :: Console',
 			'Intended Audience :: System Administrators',
 			'License :: OSI Approved :: BSD License',
