@@ -4,11 +4,14 @@
 
 import re
 
+from .util import open_if_exists
+
 def get_grub_kernels():
 	kernel_re = re.compile(r'^\s*kernel\s*(\S+)',
 			re.MULTILINE | re.IGNORECASE)
 
-	f = open('/boot/grub/grub.conf')
-	for m in kernel_re.finditer(f.read()):
-		yield m.group(1)
-	f.close()
+	f = open_if_exists('/boot/grub/grub.conf')
+	if f:
+		for m in kernel_re.finditer(f.read()):
+			yield m.group(1)
+		f.close()
