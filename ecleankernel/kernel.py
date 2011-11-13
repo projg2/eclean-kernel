@@ -142,7 +142,8 @@ def find_kernels():
 		('vmlinuz', '/boot/kernel-'),
 		('vmlinuz', '/boot/bzImage-'),
 		('systemmap', '/boot/System.map-'),
-		('config', '/boot/config-')
+		('config', '/boot/config-'),
+		('modules', '/lib/modules/')
 	)
 
 	# paths can repeat, so keep them sorted
@@ -152,9 +153,13 @@ def find_kernels():
 	for cat, g in globs:
 		for m in glob('%s*' % g):
 			kv = m[len(g):]
+			if cat == 'modules' and m in paths:
+				continue
 			path = paths[m]
 			newk = kernels[kv]
 			setattr(newk, cat, path)
+			if cat == 'modules' and '%s.old' % kv in kernels:
+				kernels['%s.old' % kv].modules = path
 			if cat == 'vmlinuz':
 				realkv = get_real_kv(path)
 				moduledir = os.path.join('/lib/modules', realkv)
