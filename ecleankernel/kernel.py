@@ -142,6 +142,12 @@ def find_kernels():
 	for cat, g in globs:
 		for m in glob('%s*' % g):
 			kv = m[len(g):]
+			if kv.startswith('genkernel-'):
+				try:
+					kv = kv.split('-', 2)[2]
+				except IndexError:
+					pass
+
 			path = paths[m]
 			newk = kernels[kv]
 			setattr(newk, cat, path)
