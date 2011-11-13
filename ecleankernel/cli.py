@@ -54,6 +54,9 @@ def main(argv):
 	parser.add_option('-D', '--debug',
 			dest='debug', action='store_true', default=False,
 			help='Enable debugging output')
+	parser.add_option('-l', '--list-kernels',
+			dest='listkern', action='store_true', default=False,
+			help='List kernel files and exit')
 	parser.add_option('-n', '--num',
 			dest='num', type='int', default=0,
 			help='Leave only newest NUM kernels (by mtime)')
@@ -65,6 +68,16 @@ def main(argv):
 	debug = ConsoleDebugger() if opts.debug else NullDebugger()
 
 	kernels = find_kernels()
+
+	if opts.listkern:
+		for k in kernels:
+			print('%s:' % k.version)
+			for key in ('vmlinuz', 'systemmap', 'config', 'modules', 'build'):
+				val = getattr(k, key)
+				if val is not None:
+					print('- %s: %s' % (key, val))
+		return 0
+
 	removals = get_removal_list(kernels,
 			limit = None if opts.all else opts.num,
 			bootloader = opts.bootloader,
