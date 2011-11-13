@@ -2,7 +2,7 @@
 # (c) 2010 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
-import os, os.path, shutil
+import os, os.path, shutil, struct
 
 from collections import defaultdict
 from functools import partial
@@ -122,6 +122,17 @@ class KernelDict(defaultdict):
 	def __repr__(self):
 		return 'KernelDict(%s)' % ','.join(['\n\t%s' % repr(x) for x in self.values()])
 
+def get_real_kv(path):
+	f = open(path, 'rb')
+	f.seek(0x200)
+	buf = f.read(0x10)
+	if buf[2:6] != b'HdrS':
+		raise NotImplementedError('Invalid magic for kernel file (!= HdrS)')
+	offset = struct.unpack_from('H', buf, 0x0e)[0]
+	f.seek(offset - 0x10, 1)
+	buf = f.read(0x100) # XXX
+	return str(buf.split(b' ', 1)[0])
+
 def find_kernels():
 	""" Find all files and directories related to installed kernels. """
 
@@ -131,8 +142,7 @@ def find_kernels():
 		('vmlinuz', '/boot/kernel-'),
 		('vmlinuz', '/boot/bzImage-'),
 		('systemmap', '/boot/System.map-'),
-		('config', '/boot/config-'),
-		('modules', '/lib/modules/')
+		('config', '/boot/config-')
 	)
 
 	# paths can repeat, so keep them sorted
@@ -142,6 +152,7 @@ def find_kernels():
 	for cat, g in globs:
 		for m in glob('%s*' % g):
 			kv = m[len(g):]
+
 			if kv.startswith('genkernel-'):
 				try:
 					kv = kv.split('-', 2)[2]
@@ -151,20 +162,23 @@ def find_kernels():
 			path = paths[m]
 			newk = kernels[kv]
 			setattr(newk, cat, path)
-			if cat == 'modules':
-				builddir = paths[os.path.join(m, 'build')]
+			if cat == 'vmlinuz':
+				realkv = get_real_kv(path)
+				moduledir = os.path.join('/lib/modules', realkv)
+				builddir = paths[os.path.join(moduledir, 'build')]
+				if os.path.isdir(moduledir):
+					newk.modules = paths[moduledir]
 				if os.path.isdir(builddir):
-					newk.build = builddir
-				if '%s.old' % kv in kernels:
-					# modules are not renamed to .old
-					oldk = kernels['%s.old' % kv]
-					oldk.modules = path
-					if newk.build:
-						oldk.build = newk.build
-					# it seems that these are renamed .old sometimes
-					if not oldk.systemmap and newk.systemmap:
-						oldk.systemmap = newk.systemmap
-					if not oldk.config and newk.config:
-						oldk.config = newk.config
+					newk.build = paths[builddir]
+
+	# fill .old files
+	for k in kernels:
+		if '%s.old' % k.version in kernels:
+			oldk = kernels['%s.old' % k.version]
+			# it seems that these are renamed .old sometimes
+			if not oldk.systemmap and k.systemmap:
+				oldk.systemmap = k.systemmap
+			if not oldk.config and k.config:
+				oldk.config = k.config
 
 	return kernels
