@@ -81,10 +81,7 @@ def get_removal_list(kernels, debug, limit = 0, bootloader = 'auto', destructive
 			used = frozenset(unprefixify(realpaths))
 
 		if limit is not None:
-			def getmtime(k):
-				return os.path.getmtime(k.vmlinuz)
-
-			ordered = sorted(kernels, key = getmtime, reverse = True)
+			ordered = sorted(kernels, key = lambda k: k.mtime, reverse = True)
 			candidates = ordered[limit:]
 		else:
 			candidates = kernels

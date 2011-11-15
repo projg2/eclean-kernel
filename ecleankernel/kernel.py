@@ -87,6 +87,10 @@ class Kernel(object):
 					getattr(self, k), PathRef):
 				yield k
 
+	@property
+	def mtime(self):
+		return os.path.getmtime(self.vmlinuz)
+
 	def unrefall(self):
 		del self.vmlinuz
 		del self.systemmap
