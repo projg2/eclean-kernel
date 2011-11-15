@@ -170,6 +170,9 @@ def find_kernels():
 			kv = m[len(g):]
 			if cat == 'modules' and m in paths:
 				continue
+			elif cat == 'initramfs' and kv.endswith('.img'):
+				kv = kv[:-4]
+
 			path = paths[m]
 			newk = kernels[kv]
 			try:
