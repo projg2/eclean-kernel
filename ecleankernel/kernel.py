@@ -82,10 +82,8 @@ class Kernel(object):
 
 	@property
 	def parts(self):
-		for k in dir(self):
-			if not k.startswith('_') and isinstance(
-					getattr(self, k), PathRef):
-				yield k
+		return ('vmlinuz', 'systemmap', 'config', 'initramfs',
+				'modules', 'build')
 
 	@property
 	def mtime(self):
