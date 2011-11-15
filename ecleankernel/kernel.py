@@ -76,6 +76,10 @@ class Kernel(object):
 	def build(self):
 		pass
 
+	@OnceProperty
+	def initramfs(self):
+		pass
+
 	@property
 	def parts(self):
 		for k in dir(self):
@@ -87,12 +91,13 @@ class Kernel(object):
 		del self.vmlinuz
 		del self.systemmap
 		del self.config
+		del self.initramfs
 		del self.modules
 		del self.build
 
 	def check_writable(self):
 		for path in (self.vmlinuz, self.systemmap, self.config,
-				self.modules, self.build):
+				self.initramfs, self.modules, self.build):
 			if path and not os.access(path, os.W_OK):
 				raise OSError('%s not writable, refusing to proceed' % path)
 
@@ -101,6 +106,7 @@ class Kernel(object):
 				'V' if self.vmlinuz else ' ',
 				'S' if self.systemmap else ' ',
 				'C' if self.config else ' ',
+				'I' if self.initramfs else ' ',
 				'M' if self.modules else ' ',
 				'B' if self.build else ' ')
 
@@ -150,6 +156,8 @@ def find_kernels():
 		('vmlinuz', '/boot/bzImage-'),
 		('systemmap', '/boot/System.map-'),
 		('config', '/boot/config-'),
+		('initramfs', '/boot/initramfs-'),
+		('initramfs', '/boot/initrd-'),
 		('modules', '/lib/modules/')
 	)
 
