@@ -87,7 +87,12 @@ class Kernel(object):
 
 	@property
 	def mtime(self):
-		return os.path.getmtime(self.vmlinuz)
+		# prefer vmlinuz, fallback to anything
+		# XXX: or maybe max()? min()?
+		for p in self.parts:
+			path = getattr(self, p)
+			if path is not None:
+				return os.path.getmtime(path)
 
 	def unrefall(self):
 		del self.vmlinuz
