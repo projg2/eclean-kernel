@@ -157,7 +157,12 @@ def find_kernels():
 				continue
 			path = paths[m]
 			newk = kernels[kv]
-			setattr(newk, cat, path)
+			try:
+				setattr(newk, cat, path)
+			except KeyError:
+				raise SystemError('Colliding %s files: %s and %s'
+						% (cat, m, getattr(newk, cat)))
+
 			if cat == 'modules' and '%s.old' % kv in kernels:
 				kernels['%s.old' % kv].modules = path
 			if cat == 'vmlinuz':
