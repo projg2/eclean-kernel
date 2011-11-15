@@ -47,7 +47,7 @@ def main(argv):
 			help='Ask before removing each kernel')
 	parser.add_option('-b', '--bootloader',
 			dest='bootloader', default='auto',
-			help='Bootloader used (auto, grub, lilo, symlinks)')
+			help='Bootloader used (auto, grub, lilo, yaboot, symlinks)')
 	parser.add_option('-d', '--destructive',
 			dest='destructive', action='store_true', default=False,
 			help='Destructive mode: remove kernels even when referenced by bootloader')
