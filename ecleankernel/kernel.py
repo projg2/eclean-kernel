@@ -76,6 +76,13 @@ class Kernel(object):
 	def build(self):
 		pass
 
+	@property
+	def parts(self):
+		for k in dir(self):
+			if not k.startswith('_') and isinstance(
+					getattr(self, k), PathRef):
+				yield k
+
 	def unrefall(self):
 		del self.vmlinuz
 		del self.systemmap

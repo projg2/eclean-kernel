@@ -72,7 +72,7 @@ def main(argv):
 	if opts.listkern:
 		for k in kernels:
 			print('%s:' % k.version)
-			for key in ('vmlinuz', 'systemmap', 'config', 'modules', 'build'):
+			for key in k.parts:
 				val = getattr(k, key)
 				if val is not None:
 					print('- %s: %s' % (key, val))
