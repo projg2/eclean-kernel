@@ -175,12 +175,13 @@ def find_kernels():
 	for cat, g in globs:
 		for m in glob('%s*' % g):
 			kv = m[len(g):]
-			if cat == 'modules' and m in paths:
-				continue
-			elif cat == 'initramfs' and kv.endswith('.img'):
+			if cat == 'initramfs' and kv.endswith('.img'):
 				kv = kv[:-4]
 
 			path = paths[m]
+			if cat == 'modules' and path in paths:
+				continue
+
 			newk = kernels[kv]
 			try:
 				setattr(newk, cat, path)
