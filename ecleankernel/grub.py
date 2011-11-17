@@ -7,7 +7,7 @@ from __future__ import print_function
 import os.path, re
 
 def get_grub_kernels(debug):
-	kernel_re = re.compile(r'^\s*kernel\s*(\S+)',
+	kernel_re = re.compile(r'^\s*kernel\s*(\([^)]+\))?(\S+)',
 			re.MULTILINE | re.IGNORECASE)
 
 	f = open('/boot/grub/grub.conf')
@@ -17,7 +17,7 @@ def get_grub_kernels(debug):
 		debug.indent(heading = 'matching grub.conf')
 		try:
 			for m in kernel_re.finditer(f.read()):
-				path = m.group(1)
+				path = m.group(2)
 				debug.printf('regexp matched path %s', path)
 				debug.indent()
 				debug.printf('from line: %s', m.group(0))
