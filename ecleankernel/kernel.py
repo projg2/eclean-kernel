@@ -118,9 +118,14 @@ class Kernel(object):
 				'B' if self.build else ' ')
 
 class PathDict(defaultdict):
+	def __contains__(self, path):
+		path = os.path.realpath(path)
+		return defaultdict.__contains__(self, path)
+
 	def __missing__(self, path):
 		path = os.path.realpath(path)
-		if path not in self:
+
+		if not defaultdict.__contains__(self, path):
 			self[path] = PathRef(path)
 		return self[path]
 
@@ -177,11 +182,10 @@ def find_kernels():
 			kv = m[len(g):]
 			if cat == 'initramfs' and kv.endswith('.img'):
 				kv = kv[:-4]
-
-			path = paths[m]
-			if cat == 'modules' and path in paths:
+			elif cat == 'modules' and m in paths:
 				continue
 
+			path = paths[m]
 			newk = kernels[kv]
 			try:
 				setattr(newk, cat, path)
