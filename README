@@ -34,6 +34,22 @@ list mode:
 which just lists found kernels with file mappings.
 
 
+Configuration file
+------------------
+
+Some default options can be specified in `eclean-kernel.rc` file in a location
+mandated by the XDG configuration directory setting, e.g. `~/.config/`.
+
+The file format is very simple -- additional command-line options are specified
+in shell style. For example, to keep three newest kernels and always preserve
+kernel configs, `~/.config/eclean-kernel.rc` would contain:
+
+	-n 3 -x config
+
+The options read from config files will be parsed before actual command-line
+options, so the latter will override them.
+
+
 Fiding and mapping kernels
 --------------------------
 
