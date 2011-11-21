@@ -156,7 +156,7 @@ def get_real_kv(path):
 	buf = f.read(0x100) # XXX
 	return str(buf.split(b' ', 1)[0])
 
-def find_kernels():
+def find_kernels(exclusions = ()):
 	""" Find all files and directories related to installed kernels. """
 
 	globs = (
@@ -176,6 +176,8 @@ def find_kernels():
 
 	kernels = KernelDict()
 	for cat, g in globs:
+		if cat in exclusions:
+			continue
 		for m in glob('%s*' % g):
 			kv = m[len(g):]
 			if cat == 'initramfs' and kv.endswith('.img'):
@@ -204,9 +206,9 @@ def find_kernels():
 				realkv = get_real_kv(path)
 				moduledir = os.path.join('/lib/modules', realkv)
 				builddir = paths[os.path.join(moduledir, 'build')]
-				if os.path.isdir(moduledir):
+				if 'modules' not in exclusions and os.path.isdir(moduledir):
 					newk.modules = paths[moduledir]
-				if os.path.isdir(builddir):
+				if 'build' not in exclusions and os.path.isdir(builddir):
 					newk.build = paths[builddir]
 
 	# fill .old files

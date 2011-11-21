@@ -6,7 +6,7 @@ from __future__ import print_function
 
 from optparse import OptionParser
 
-from .kernel import find_kernels
+from .kernel import find_kernels, Kernel
 from .process import get_removal_list
 
 ecleankern_desc = '''
@@ -63,11 +63,24 @@ def main(argv):
 	parser.add_option('-p', '--pretend',
 			dest='pretend', action='store_true', default=False,
 			help='Print the list of kernels to be removed and exit')
+	parser.add_option('-x', '--exclude',
+			dest='exclude', default='',
+			help='Exclude kernel parts from being removed (comma-separated, supported parts: %s)'
+				% ', '.join(Kernel.parts))
 	(opts, args) = parser.parse_args(argv[1:])
+
+	exclusions = frozenset(opts.exclude.split(','))
+	for x in exclusions:
+		if not x:
+			pass
+		elif x not in Kernel.parts:
+			parser.error('Invalid kernel part: %s' % x)
+		elif x == 'vmlinuz':
+			parser.error('Kernel exclusion unsupported')
 
 	debug = ConsoleDebugger() if opts.debug else NullDebugger()
 
-	kernels = find_kernels()
+	kernels = find_kernels(exclusions = exclusions)
 
 	if opts.listkern:
 		for k in kernels:
