@@ -4,6 +4,8 @@
 
 from __future__ import print_function
 
+import os, os.path, errno, shlex
+
 from optparse import OptionParser
 
 from .kernel import find_kernels, Kernel
@@ -67,7 +69,21 @@ def main(argv):
 			dest='exclude', default='',
 			help='Exclude kernel parts from being removed (comma-separated, supported parts: %s)'
 				% ', '.join(Kernel.parts))
-	(opts, args) = parser.parse_args(argv[1:])
+
+	args = []
+	config_dirs = os.environ.get('XDG_CONFIG_DIRS', '/etc/xdg').split(':')
+	config_dirs.insert(0, os.environ.get('XDG_CONFIG_HOME', '~/.config'))
+	for x in reversed(config_dirs):
+		try:
+			f = open('%s/eclean-kernel.rc' % os.path.expanduser(x), 'r')
+		except IOError as e:
+			if e.errno != errno.ENOENT:
+				raise
+		else:
+			args.extend(shlex.split(f.read()))
+
+	args.extend(argv[1:])
+	(opts, args) = parser.parse_args(args)
 
 	exclusions = frozenset(opts.exclude.split(','))
 	for x in exclusions:
