@@ -80,7 +80,7 @@ def main(argv):
 			if e.errno != errno.ENOENT:
 				raise
 		else:
-			args.extend(shlex.split(f.read()))
+			args.extend(shlex.split(f.read(), comments = True))
 
 	args.extend(argv[1:])
 	(opts, args) = parser.parse_args(args)
