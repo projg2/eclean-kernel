@@ -193,8 +193,15 @@ def find_kernels():
 				raise SystemError('Colliding %s files: %s and %s'
 						% (cat, m, getattr(newk, cat)))
 
-			if cat == 'modules' and '%s.old' % kv in kernels:
-				kernels['%s.old' % kv].modules = path
+			if cat == 'modules':
+				builddir = paths[os.path.join(path, 'build')]
+				if os.path.isdir(builddir):
+					newk.build = builddir
+
+				if '%s.old' % kv in kernels:
+					kernels['%s.old' % kv].modules = path
+					if newk.build:
+						kernels['%s.old' % kv].build = builddir
 			if cat == 'vmlinuz':
 				realkv = get_real_kv(path)
 				moduledir = os.path.join('/lib/modules', realkv)
