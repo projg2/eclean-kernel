@@ -80,10 +80,8 @@ class Kernel(object):
 	def initramfs(self):
 		pass
 
-	@property
-	def parts(self):
-		return ('vmlinuz', 'systemmap', 'config', 'initramfs',
-				'modules', 'build')
+	parts = ('vmlinuz', 'systemmap', 'config', 'initramfs',
+			'modules', 'build')
 
 	@property
 	def mtime(self):
