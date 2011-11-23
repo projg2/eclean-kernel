@@ -4,11 +4,17 @@
 
 import re
 
-def get_yaboot_kernels():
+def get_yaboot_kernels(debug = False):
 	kernel_re = re.compile(r'^\s*image\s*=\s*(.+)\s*$',
 			re.MULTILINE | re.IGNORECASE)
 
 	f = open('/etc/yaboot.conf')
-	for m in kernel_re.finditer(f.read()):
-		yield m.group(1)
-	f.close()
+
+	def _get_kernels(f):
+		try:
+			for m in kernel_re.finditer(f.read()):
+				yield m.group(1)
+		finally:
+			f.close()
+
+	return _get_kernels(f)
