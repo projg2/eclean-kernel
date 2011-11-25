@@ -9,7 +9,7 @@ import os, os.path, errno, shlex
 from optparse import OptionParser
 
 from .kernel import find_kernels, Kernel
-from .process import get_removal_list
+from .process import get_removal_list, bootloaders
 
 ecleankern_desc = '''
 Remove old kernel versions, keeping either N newest kernels (with -n)
@@ -49,7 +49,8 @@ def main(argv):
 			help='Ask before removing each kernel')
 	parser.add_option('-b', '--bootloader',
 			dest='bootloader', default='auto',
-			help='Bootloader used (auto, grub, lilo, yaboot, symlinks)')
+			help='Bootloader used (auto, %s)'
+				% ', '.join([b.name for b in bootloaders]))
 	parser.add_option('-d', '--destructive',
 			dest='destructive', action='store_true', default=False,
 			help='Destructive mode: remove kernels even when referenced by bootloader')
