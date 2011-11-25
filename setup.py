@@ -20,7 +20,7 @@ setup(
 		author_email = 'mgorny@gentoo.org',
 		url = 'http://github.com/mgorny/eclean-kernel',
 
-		packages = ['ecleankernel'],
+		packages = ['ecleankernel', 'ecleankernel.bootloader'],
 		scripts = ['eclean-kernel'],
 
 		classifiers = [
