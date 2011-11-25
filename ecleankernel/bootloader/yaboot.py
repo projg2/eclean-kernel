@@ -2,19 +2,8 @@
 # (c) 2011 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
-import re
+from .lilo import LILO
 
-def get_yaboot_kernels(debug = False):
-	kernel_re = re.compile(r'^\s*image\s*=\s*(.+)\s*$',
-			re.MULTILINE | re.IGNORECASE)
-
-	f = open('/etc/yaboot.conf')
-
-	def _get_kernels(f):
-		try:
-			for m in kernel_re.finditer(f.read()):
-				yield m.group(1)
-		finally:
-			f.close()
-
-	return _get_kernels(f)
+class Yaboot(LILO):
+	name = 'yaboot'
+	def_path = '/etc/yaboot.conf'

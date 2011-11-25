@@ -6,19 +6,13 @@ from __future__ import print_function
 
 import errno, os, os.path, re
 
-from .bootloader.grub import get_grub_kernels
-from .bootloader.grub2 import get_grub2_kernels
-from .bootloader.lilo import get_lilo_kernels
-from .bootloader.yaboot import get_yaboot_kernels
-from .bootloader.symlinks import get_vmlinuz_symlinks
+from .bootloader.grub import GRUB
+from .bootloader.grub2 import GRUB2
+from .bootloader.lilo import LILO
+from .bootloader.yaboot import Yaboot
+from .bootloader.symlinks import Symlinks
 
-bootloaders = (
-	('lilo', get_lilo_kernels),
-	('grub2', get_grub2_kernels),
-	('grub', get_grub_kernels),
-	('yaboot', get_yaboot_kernels),
-	('symlinks', get_vmlinuz_symlinks),
-)
+bootloaders = (LILO, GRUB2, GRUB, Yaboot, Symlinks)
 
 class RemovedKernelDict(dict):
 	def add(self, k, reason):
@@ -49,18 +43,19 @@ def get_removal_list(kernels, debug, limit = 0, bootloader = 'auto', destructive
 	if limit is None or limit > 0:
 		if not destructive:
 			used = ()
-			for bl, getfunc in bootloaders:
-				if bootloader in ('auto', bl):
-					debug.printf('Trying bootloader %s', bl)
+			for bl in bootloaders:
+				if bootloader in ('auto', bl.name):
+					debug.printf('Trying bootloader %s', bl.name)
 					try:
 						debug.indent()
-						used = getfunc(debug = debug)
+						blinst = bl(debug = debug)
+						used = blinst()
 						debug.outdent()
 					except IOError as e:
 						if e.errno != errno.ENOENT:
 							raise
 					else:
-						lastbl = bl
+						lastbl = blinst
 						break
 
 			realpaths = [os.path.realpath(x) for x in used]
@@ -92,7 +87,7 @@ def get_removal_list(kernels, debug, limit = 0, bootloader = 'auto', destructive
 			if destructive:
 				out.add(k, 'unwanted')
 			elif k.version not in used:
-				out.add(k, 'not referenced by bootloader (%s)' % lastbl)
+				out.add(k, 'not referenced by bootloader (%s)' % lastbl.name)
 
 	current = os.uname()[2]
 

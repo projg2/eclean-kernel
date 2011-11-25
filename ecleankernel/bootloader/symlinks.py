@@ -4,9 +4,15 @@
 
 import os.path
 
-def get_vmlinuz_symlinks(debug = False):
-	for fn in ('vmlinuz', 'vmlinux', 'kernel', 'bzImage'):
-		for suffix in ('', '.old'):
-			f = '/boot/%s%s' % (fn, suffix)
-			if os.path.exists(f):
-				yield f
+class Symlinks(object):
+	name = 'symlinks'
+
+	def __init__(self, debug = False):
+		self._debug = debug
+
+	def __call__(self, path = None):
+		for fn in ('vmlinuz', 'vmlinux', 'kernel', 'bzImage'):
+			for suffix in ('', '.old'):
+				f = '/boot/%s%s' % (fn, suffix)
+				if os.path.exists(f):
+					yield f
