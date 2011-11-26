@@ -15,8 +15,9 @@ class LILO(object):
 		self._debug = debug
 		self._kernel_re = re.compile(self.kernel_re,
 				re.MULTILINE | re.IGNORECASE)
+		self.path = path or self.def_path
 
-		with open(path or self.def_path) as f:
+		with open(self.path) as f:
 			debug.print('%s found' % (path or self.def_path))
 			self._content = f.read()
 
