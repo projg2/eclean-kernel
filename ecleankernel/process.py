@@ -4,15 +4,9 @@
 
 from __future__ import print_function
 
+from .bootloader import get_bootloader
+
 import errno, os, os.path, re
-
-from .bootloader.grub import GRUB
-from .bootloader.grub2 import GRUB2
-from .bootloader.lilo import LILO
-from .bootloader.yaboot import Yaboot
-from .bootloader.symlinks import Symlinks
-
-bootloaders = (LILO, GRUB2, GRUB, Yaboot, Symlinks)
 
 class RemovedKernelDict(dict):
 	def add(self, k, reason):
@@ -42,22 +36,8 @@ def get_removal_list(kernels, debug, limit = 0, bootloader = 'auto', destructive
 
 	if limit is None or limit > 0:
 		if not destructive:
-			used = ()
-			lastbl = None
-			for bl in bootloaders:
-				if bootloader in ('auto', bl.name):
-					debug.printf('Trying bootloader %s', bl.name)
-					try:
-						debug.indent()
-						blinst = bl(debug = debug)
-						used = blinst()
-						debug.outdent()
-					except IOError as e:
-						if e.errno != errno.ENOENT:
-							raise
-					else:
-						lastbl = blinst
-						break
+			lastbl = get_bootloader(requested = bootloader, debug = debug)
+			used = lastbl()
 
 			if lastbl is None:
 				raise SystemError('Unable to get kernels from bootloader config (%s)'

@@ -8,8 +8,9 @@ import os, os.path, errno, shlex
 
 from optparse import OptionParser
 
+from .bootloader import bootloaders
 from .kernel import find_kernels, Kernel
-from .process import get_removal_list, bootloaders
+from .process import get_removal_list
 
 ecleankern_desc = '''
 Remove old kernel versions, keeping either N newest kernels (with -n)
