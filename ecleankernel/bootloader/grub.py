@@ -11,10 +11,10 @@ class GRUB(LILO):
 	kernel_re = r'^\s*kernel\s*(\([^)]+\))?(?P<path>\S+)'
 	def_path = '/boot/grub/grub.conf'
 
-	def _get_kernels(self, f):
+	def _get_kernels(self, *args, **kwargs):
 		debug = self._debug
 
-		for path in LILO._get_kernels(self, f):
+		for path in LILO._get_kernels(self, *args, **kwargs):
 			if os.path.relpath(path, '/boot').startswith('..'):
 				path = os.path.join('/boot', os.path.relpath(path, '/'))
 				debug.indent()
