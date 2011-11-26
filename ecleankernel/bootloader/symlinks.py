@@ -7,10 +7,10 @@ import os.path
 class Symlinks(object):
 	name = 'symlinks'
 
-	def __init__(self, debug = False):
+	def __init__(self, debug = False, path = None):
 		self._debug = debug
 
-	def __call__(self, path = None):
+	def __call__(self):
 		for fn in ('vmlinuz', 'vmlinux', 'kernel', 'bzImage'):
 			for suffix in ('', '.old'):
 				f = '/boot/%s%s' % (fn, suffix)

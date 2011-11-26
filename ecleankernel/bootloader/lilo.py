@@ -11,10 +11,14 @@ class LILO(object):
 	kernel_re = r'^\s*image\s*=\s*(?P<path>.+)\s*$'
 	def_path = '/etc/lilo.conf'
 
-	def __init__(self, debug = False):
+	def __init__(self, debug = False, path = None):
 		self._debug = debug
 		self._kernel_re = re.compile(self.kernel_re,
 				re.MULTILINE | re.IGNORECASE)
+
+		with open(path or self.def_path) as f:
+			debug.print('%s found' % (path or self.def_path))
+			self._content = f.read()
 
 	def _get_kernels(self, content):
 		debug = self._debug
@@ -31,7 +35,5 @@ class LILO(object):
 		finally:
 			debug.outdent()
 
-	def __call__(self, path = None):
-		with open(path or self.def_path) as f:
-			self._debug.print('%s found' % (path or self.def_path))
-			return self._get_kernels(f.read())
+	def __call__(self):
+		return self._get_kernels(self._content)
