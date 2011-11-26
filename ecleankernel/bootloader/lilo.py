@@ -16,12 +16,12 @@ class LILO(object):
 		self._kernel_re = re.compile(self.kernel_re,
 				re.MULTILINE | re.IGNORECASE)
 
-	def _get_kernels(self, f):
+	def _get_kernels(self, content):
 		debug = self._debug
 
 		debug.indent(heading = 'matching...')
 		try:
-			for m in self._kernel_re.finditer(f.read()):
+			for m in self._kernel_re.finditer(content):
 				path = m.group('path')
 				debug.printf('regexp matched path %s', path)
 				debug.indent()
@@ -29,11 +29,9 @@ class LILO(object):
 				debug.outdent()
 				yield path
 		finally:
-			f.close()
 			debug.outdent()
 
 	def __call__(self, path = None):
-		f = open(path or self.def_path)
-		self._debug.print('%s found' % (path or self.def_path))
-
-		return self._get_kernels(f)
+		with open(path or self.def_path) as f:
+			self._debug.print('%s found' % (path or self.def_path))
+			return self._get_kernels(f.read())
