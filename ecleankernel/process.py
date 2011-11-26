@@ -4,7 +4,6 @@
 
 from __future__ import print_function
 
-from .bootloader import get_bootloader
 
 import errno, os, os.path, re
 
@@ -23,7 +22,7 @@ def remove_stray(kernels):
 		if k.vmlinuz is None:
 			yield k
 
-def get_removal_list(kernels, debug, limit = 0, bootloader = 'auto', destructive = False):
+def get_removal_list(kernels, debug, limit = 0, bootloader = None, destructive = False):
 	""" Get a list of outdated kernels to remove. With explanations. """
 
 	debug.indent(heading = 'In get_removal_list()')
@@ -36,12 +35,11 @@ def get_removal_list(kernels, debug, limit = 0, bootloader = 'auto', destructive
 
 	if limit is None or limit > 0:
 		if not destructive:
-			lastbl = get_bootloader(requested = bootloader, debug = debug)
-			used = lastbl()
-
-			if lastbl is None:
+			if bootloader is None:
 				raise SystemError('Unable to get kernels from bootloader config (%s)'
 						% bootloader)
+
+			used = bootloader()
 			realpaths = [os.path.realpath(x) for x in used]
 
 			prefix = re.compile(r'^/boot/(vmlinu[xz]|kernel|bzImage)-')
@@ -68,7 +66,7 @@ def get_removal_list(kernels, debug, limit = 0, bootloader = 'auto', destructive
 			if destructive:
 				out.add(k, 'unwanted')
 			elif k.version not in used:
-				out.add(k, 'not referenced by bootloader (%s)' % lastbl.name)
+				out.add(k, 'not referenced by bootloader (%s)' % bootloader.name)
 
 	current = os.uname()[2]
 

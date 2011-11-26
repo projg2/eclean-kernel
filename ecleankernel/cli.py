@@ -8,7 +8,7 @@ import os, os.path, errno, shlex
 
 from optparse import OptionParser
 
-from .bootloader import bootloaders
+from .bootloader import bootloaders, get_bootloader
 from .kernel import find_kernels, Kernel
 from .process import get_removal_list
 
@@ -109,9 +109,11 @@ def main(argv):
 					print('- %s: %s' % (key, val))
 		return 0
 
+	bootloader = get_bootloader(requested = opts.bootloader,
+			debug = debug)
 	removals = get_removal_list(kernels,
 			limit = None if opts.all else opts.num,
-			bootloader = opts.bootloader,
+			bootloader = bootloader,
 			destructive = opts.destructive,
 			debug = debug)
 
