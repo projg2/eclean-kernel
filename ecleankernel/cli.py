@@ -124,9 +124,13 @@ def main(argv):
 
 		for k, reason in removals:
 			print('- %s: %s' % (k.version, ', '.join(reason)))
+		if removals and hasattr(bootloader, 'postrm'):
+			print('Bootloader %s config will be updated.' % bootloader.name)
 	else:
 		for k, reason in removals:
 			k.check_writable()
+
+		nremoved = 0
 
 		for k, reason in removals:
 			remove = True
@@ -144,5 +148,11 @@ def main(argv):
 			if remove:
 				print('* Removing kernel %s (%s)' % (k.version, ', '.join(reason)))
 				del kernels[k.version]
+				nremoved += 1
+
+		if nremoved:
+			print('Removed %d kernels' % nremoved)
+			if hasattr(bootloader, 'postrm'):
+				bootloader.postrm()
 
 	return 0
