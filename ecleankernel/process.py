@@ -43,6 +43,7 @@ def get_removal_list(kernels, debug, limit = 0, bootloader = 'auto', destructive
 	if limit is None or limit > 0:
 		if not destructive:
 			used = ()
+			lastbl = None
 			for bl in bootloaders:
 				if bootloader in ('auto', bl.name):
 					debug.printf('Trying bootloader %s', bl.name)
@@ -58,10 +59,10 @@ def get_removal_list(kernels, debug, limit = 0, bootloader = 'auto', destructive
 						lastbl = blinst
 						break
 
-			realpaths = [os.path.realpath(x) for x in used]
-			if not realpaths:
+			if lastbl is None:
 				raise SystemError('Unable to get kernels from bootloader config (%s)'
 						% bootloader)
+			realpaths = [os.path.realpath(x) for x in used]
 
 			prefix = re.compile(r'^/boot/(vmlinu[xz]|kernel|bzImage)-')
 			def unprefixify(filenames):
