@@ -4,8 +4,7 @@
 
 from __future__ import print_function
 
-
-import errno, os, os.path, re
+import os, os.path, re
 
 class RemovedKernelDict(dict):
 	def add(self, k, reason):

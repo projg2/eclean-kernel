@@ -8,6 +8,8 @@ from .lilo import LILO
 from .yaboot import Yaboot
 from .symlinks import Symlinks
 
+import errno
+
 bootloaders = (LILO, GRUB2, GRUB, Yaboot, Symlinks)
 
 def get_bootloader(debug, requested = None):
