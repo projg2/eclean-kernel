@@ -150,7 +150,8 @@ def get_real_kv(path):
 	f.seek(0x200)
 	buf = f.read(0x10)
 	if buf[2:6] != b'HdrS':
-		raise NotImplementedError('Invalid magic for kernel file (!= HdrS)')
+		raise NotImplementedError('Invalid magic for kernel file %s (!= HdrS)'
+				% path)
 	offset = struct.unpack_from('H', buf, 0x0e)[0]
 	f.seek(offset - 0x10, 1)
 	buf = f.read(0x100) # XXX
