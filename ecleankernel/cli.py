@@ -17,6 +17,16 @@ Remove old kernel versions, keeping either N newest kernels (with -n)
 or only those which are referenced by a bootloader (with -a).
 '''
 
+class DummyMount(object):
+	def mount(self):
+		pass
+
+	def rwmount(self):
+		pass
+
+	def umount(self):
+		pass
+
 class NullDebugger(object):
 	def __init__(self):
 		self._indent = 1
@@ -61,6 +71,9 @@ def main(argv):
 	parser.add_option('-l', '--list-kernels',
 			dest='listkern', action='store_true', default=False,
 			help='List kernel files and exit')
+	parser.add_option('-M', '--no-mount',
+			dest='mount', action='store_false', default=True,
+			help='Disable (re-)mounting /boot if necessary')
 	parser.add_option('-n', '--num',
 			dest='num', type='int', default=0,
 			help='Leave only newest NUM kernels (by mtime)')
@@ -98,61 +111,75 @@ def main(argv):
 
 	debug = ConsoleDebugger() if opts.debug else NullDebugger()
 
-	kernels = find_kernels(exclusions = exclusions)
-
-	if opts.listkern:
-		for k in kernels:
-			print('%s:' % k.version)
-			for key in k.parts:
-				val = getattr(k, key)
-				if val is not None:
-					print('- %s: %s' % (key, val))
-		return 0
-
-	bootloader = get_bootloader(requested = opts.bootloader,
-			debug = debug)
-	removals = get_removal_list(kernels,
-			limit = None if opts.all else opts.num,
-			bootloader = bootloader,
-			destructive = opts.destructive,
-			debug = debug)
-
-	if not removals:
-		print('No outdated kernels found.')
-	elif opts.pretend:
-		print('These are the kernels which would be removed:')
-
-		for k, reason in removals:
-			print('- %s: %s' % (k.version, ', '.join(reason)))
-		if removals and hasattr(bootloader, 'postrm'):
-			print('Bootloader %s config will be updated.' % bootloader.name)
+	bootfs = DummyMount()
+	try:
+		import pymountboot
+	except ImportError:
+		debug.print('unable to import pymountboot, /boot mounting disabled.')
 	else:
-		for k, reason in removals:
-			k.check_writable()
+		if opts.mount:
+			bootfs = pymountboot.BootMountpoint()
 
-		nremoved = 0
+	bootfs.mount()
+	try:
+		kernels = find_kernels(exclusions = exclusions)
 
-		for k, reason in removals:
-			remove = True
-			while opts.ask:
-				ans = raw_input('Remove %s (%s)? [Yes/No]'
-						% (k.version, ', '.join(reason))).lower()
-				if 'yes'.startswith(ans):
-					break
-				elif 'no'.startswith(ans):
-					remove = False
-					break
-				else:
-					print('Invalid answer (%s).' % ans)
+		if opts.listkern:
+			for k in kernels:
+				print('%s:' % k.version)
+				for key in k.parts:
+					val = getattr(k, key)
+					if val is not None:
+						print('- %s: %s' % (key, val))
+			return 0
 
-			if remove:
-				print('* Removing kernel %s (%s)' % (k.version, ', '.join(reason)))
-				del kernels[k.version]
-				nremoved += 1
+		bootloader = get_bootloader(requested = opts.bootloader,
+				debug = debug)
+		removals = get_removal_list(kernels,
+				limit = None if opts.all else opts.num,
+				bootloader = bootloader,
+				destructive = opts.destructive,
+				debug = debug)
 
-		if nremoved:
-			print('Removed %d kernels' % nremoved)
-			if hasattr(bootloader, 'postrm'):
-				bootloader.postrm()
+		if not removals:
+			print('No outdated kernels found.')
+		elif opts.pretend:
+			print('These are the kernels which would be removed:')
 
-	return 0
+			for k, reason in removals:
+				print('- %s: %s' % (k.version, ', '.join(reason)))
+			if removals and hasattr(bootloader, 'postrm'):
+				print('Bootloader %s config will be updated.' % bootloader.name)
+		else:
+			bootfs.rwmount()
+			for k, reason in removals:
+				k.check_writable()
+
+			nremoved = 0
+
+			for k, reason in removals:
+				remove = True
+				while opts.ask:
+					ans = raw_input('Remove %s (%s)? [Yes/No]'
+							% (k.version, ', '.join(reason))).lower()
+					if 'yes'.startswith(ans):
+						break
+					elif 'no'.startswith(ans):
+						remove = False
+						break
+					else:
+						print('Invalid answer (%s).' % ans)
+
+				if remove:
+					print('* Removing kernel %s (%s)' % (k.version, ', '.join(reason)))
+					del kernels[k.version]
+					nremoved += 1
+
+			if nremoved:
+				print('Removed %d kernels' % nremoved)
+				if hasattr(bootloader, 'postrm'):
+					bootloader.postrm()
+
+		return 0
+	finally:
+		bootfs.umount()
