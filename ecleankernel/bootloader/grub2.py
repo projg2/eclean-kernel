@@ -28,5 +28,6 @@ class GRUB2(GRUB):
 		return GRUB._get_kernels(self, content)
 
 	def _postrm(self):
-		self._debug.print('Calling grub2-mkconfig')
-		subprocess.call(['grub2-mkconfig', '-o', self.path])
+		if self._autogen:
+			self._debug.print('Calling grub2-mkconfig')
+			subprocess.call(['grub2-mkconfig', '-o', self.path])
