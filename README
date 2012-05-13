@@ -4,7 +4,7 @@ eclean-kernel
 Introduction
 ------------
 
-`eclean-kernel` is a small tool aimed at removing old and stale kernel files. It
+*eclean-kernel* is a small tool aimed at removing old and stale kernel files. It
 does not only remove old kernels itself but also tries to remove all related
 files including auxiliary files in /boot, kernel modules and even the source
 tree.
@@ -13,21 +13,21 @@ tree.
 Usage
 -----
 
-The typical use is:
+The typical use is::
 
 	eclean-kernel -n 3 -p
 
-where `-n 3` is used to keep three newest kernels around, and `-p` makes
+where ``-n 3`` is used to keep three newest kernels around, and ``-p`` makes
 eclean-kernel only print kernels which would be removed.
 
-In case the results are satisfactory, use:
+In case the results are satisfactory, use::
 
 	eclean-kernel -n 3
 
 to actually remove the kernels.
 
 If you are unsure whether kernel files are mapped correctly, you can use
-list mode:
+list mode::
 
 	eclean-kernel -l
 
@@ -37,12 +37,12 @@ which just lists found kernels with file mappings.
 Configuration file
 ------------------
 
-Some default options can be specified in `eclean-kernel.rc` file in a location
-mandated by the XDG configuration directory setting, e.g. `~/.config/`.
+Some default options can be specified in ``eclean-kernel.rc`` file in a location
+mandated by the XDG configuration directory setting, e.g. ``~/.config/``.
 
 The file format is very simple -- additional command-line options are specified
 in shell style. For example, to keep three newest kernels and always preserve
-kernel configs, `~/.config/eclean-kernel.rc` would contain:
+kernel configs, ``~/.config/eclean-kernel.rc`` would contain::
 
 	-n 3 -x config
 
@@ -55,35 +55,36 @@ Fiding and mapping kernels
 
 The first task performed by eclean-kernel is finding all currently installed
 kernels and matching auxiliary files to them. In order to do that, eclean-kernel
-first looks for files named in the form of:
+first looks for files named in the form of::
 
 	/boot/PREFIX-VERSION
 
-where _PREFIX_ is one of the predefined file prefixes representing the file
-type, and _VERSION_ is a free-form string following it (preferably the kernel
+where *PREFIX* is one of the predefined file prefixes representing the file
+type, and *VERSION* is a free-form string following it (preferably the kernel
 version).
 
 Right now, eclean-kernel supports the following prefixes:
 
-- `vmlinuz`, `vmlinux`, `kernel` and `bzImage` for kernel files,
-- `System.map` for system.map file,
-- `config` for kernel configuration.
+- ``vmlinuz``, ``vmlinux``, ``kernel`` and ``bzImage`` for kernel files,
+- ``System.map`` for system.map file,
+- ``config`` for kernel configuration.
 
 In case support for additional prefixes is needed, feel free to report a bug.
 
-Files belonging to the same kernel are grouped using the _VERSION_ part, e.g. it
-is assumed that `System.map-X.Y.Z` corresponds to `vmlinuz-X.Y.Z`.
+Files belonging to the same kernel are grouped using the *VERSION* part, e.g. it
+is assumed that ``System.map-X.Y.Z`` corresponds to ``vmlinuz-X.Y.Z``.
 
-In addition to that, eclean-kernel looks for kernel modules in:
+In addition to that, eclean-kernel looks for kernel modules in::
 
 	/lib/modules/REALVERSION
 
-where _REALVERSION_ corresponds to the actual kernel version string used
+where *REALVERSION* corresponds to the actual kernel version string used
 by the kernel itself. It is read from kernel image itself and it is assumed to
-be equal to _VERSION_ for libdirs unmatched to any kernel image.
+be equal to *VERSION* for libdirs unmatched to any kernel image.
 
-In other words, genkernel-generated `kernel-genkernel-ARCH-X.Y.Z` will be
-matched to `System.map-genkernel-ARCH-X.Y.Z` but also to `/lib/modules/X.Y.Z`.
+In other words, genkernel-generated ``kernel-genkernel-ARCH-X.Y.Z`` will be
+matched to ``System.map-genkernel-ARCH-X.Y.Z`` but also
+to ``/lib/modules/X.Y.Z``.
 
 
 Choosing kernels to remove
@@ -93,11 +94,11 @@ The kernel choice algorithm is quite simple:
 
 1. If the kernel is currently used, don't remove it;
 2. If the kernel is referenced by a bootloader, don't remove it
-	(unless `--destructive`);
+   (unless ``--destructive``);
 3. If auxiliary files do not map to existing kernel, remove them;
-4. If `--all` is used, remove the kernel;
-5. If kernel is not within _N_ newest kernels (where _N_ is the argument
-	to `-n`), remove it.
+4. If ``--all`` is used, remove the kernel;
+5. If kernel is not within *N* newest kernels (where *N* is the argument
+   to ``-n``), remove it.
 
 The program always derefences symlinks and counts real path references. Thus,
 a particular file will be removed only if all kernels referencing it are removed
@@ -115,27 +116,27 @@ are supported:
 2. grub,
 3. yaboot.
 
-There is also a pseudo-bootloader module called _symlinks_ which assumes files
-symlinked to `/boot/PREFIX` and `/boot/PREFIX.old` are used.
+There is also a pseudo-bootloader module called *symlinks* which assumes files
+symlinked to ``/boot/PREFIX`` and ``/boot/PREFIX.old`` are used.
 
 By default, eclean-kernel uses the first bootloader from the above list for
-which a configuration file exists, and uses _symlinks_ as a fallback. This can
-be changed using `--bootloader` argument.
+which a configuration file exists, and uses *symlinks* as a fallback. This can
+be changed using ``--bootloader`` argument.
 
 
 Reporting bugs
 --------------
 
-Please report bugs either to [github][1] or [Gentoo Bugzie][2]. When reporting
-a bug, please attach the outputs of:
+Please report bugs either to `the issue tracker`_ or `Gentoo Bugzilla`_. When
+reporting a bug, please attach the outputs of::
 
 	eclean-kernel -l
 	ls -l /boot /lib/modules/*
 
 If relevant, please attach bootloader configuration files as well.
 
-[1]:https://github.com/mgorny/eclean-kernel/issues/
-[2]:http://bugs.gentoo.org/
+.. _the issue tracker: https://bitbucket.org/mgorny/eclean-kernel/issues/
+.. _Gentoo Bugzilla: https://bugs.gentoo.org/
 
 
-<!-- vim:se syn=markdown : -->
+.. vim:syn=rst
