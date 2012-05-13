@@ -110,11 +110,12 @@ Bootloader support
 
 In order to determine kernels currently used, eclean-kernel is supposed to read
 configuration files used by the bootloader. Right now, the following bootloaders
-are supported:
+are supported (and looked up in the following order):
 
 1. lilo,
-2. grub,
-3. yaboot.
+2. grub2,
+3. grub,
+4. yaboot.
 
 There is also a pseudo-bootloader module called *symlinks* which assumes files
 symlinked to ``/boot/PREFIX`` and ``/boot/PREFIX.old`` are used.
