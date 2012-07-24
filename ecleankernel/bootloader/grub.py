@@ -8,7 +8,7 @@ import os.path
 
 class GRUB(LILO):
 	name = 'grub'
-	kernel_re = r'^\s*kernel\s*(\([^)]+\))?(?P<path>\S+)'
+	kernel_re = r'^\s*(kernel|module)\s*(\([^)]+\))?(?P<path>\S+)'
 	def_path = '/boot/grub/grub.conf'
 
 	def _get_kernels(self, *args, **kwargs):
