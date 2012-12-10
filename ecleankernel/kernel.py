@@ -10,7 +10,7 @@ from glob import glob
 
 class PathRef(str):
 	def __init__(self, path):
-		str.__init__(self, path)
+		str.__init__(self)
 		self._refs = 0
 
 	def ref(self):
