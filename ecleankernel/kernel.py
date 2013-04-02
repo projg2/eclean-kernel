@@ -99,7 +99,7 @@ class Kernel(object):
 		offset = struct.unpack_from('H', buf, 0x0e)[0]
 		f.seek(offset - 0x10, 1)
 		buf = f.read(0x100) # XXX
-		return str(buf.split(b' ', 1)[0])
+		return buf.split(b' ', 1)[0].decode()
 
 	@property
 	def mtime(self):
