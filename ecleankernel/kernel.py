@@ -84,6 +84,24 @@ class Kernel(object):
 			'modules', 'build')
 
 	@property
+	def real_kv(self):
+		""" Obtain the KV from the kernel, as used by it. """
+		vmlinuz = self.vmlinuz
+		if vmlinuz is None:
+			return None
+
+		f = open(vmlinuz, 'rb')
+		f.seek(0x200)
+		buf = f.read(0x10)
+		if buf[2:6] != b'HdrS':
+			raise NotImplementedError('Invalid magic for kernel file %s (!= HdrS)'
+					% path)
+		offset = struct.unpack_from('H', buf, 0x0e)[0]
+		f.seek(offset - 0x10, 1)
+		buf = f.read(0x100) # XXX
+		return str(buf.split(b' ', 1)[0])
+
+	@property
 	def mtime(self):
 		# prefer vmlinuz, fallback to anything
 		# XXX: or maybe max()? min()?
@@ -145,18 +163,6 @@ class KernelDict(defaultdict):
 	def __repr__(self):
 		return 'KernelDict(%s)' % ','.join(['\n\t%s' % repr(x) for x in self.values()])
 
-def get_real_kv(path):
-	f = open(path, 'rb')
-	f.seek(0x200)
-	buf = f.read(0x10)
-	if buf[2:6] != b'HdrS':
-		raise NotImplementedError('Invalid magic for kernel file %s (!= HdrS)'
-				% path)
-	offset = struct.unpack_from('H', buf, 0x0e)[0]
-	f.seek(offset - 0x10, 1)
-	buf = f.read(0x100) # XXX
-	return str(buf.split(b' ', 1)[0])
-
 def find_kernels(exclusions = ()):
 	""" Find all files and directories related to installed kernels. """
 
@@ -204,7 +210,7 @@ def find_kernels(exclusions = ()):
 					if newk.build:
 						kernels['%s.old' % kv].build = builddir
 			if cat == 'vmlinuz':
-				realkv = get_real_kv(path)
+				realkv = newk.real_kv
 				moduledir = os.path.join('/lib/modules', realkv)
 				builddir = paths[os.path.join(moduledir, 'build')]
 				if 'modules' not in exclusions and os.path.isdir(moduledir):

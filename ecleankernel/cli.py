@@ -126,7 +126,7 @@ def main(argv):
 
 		if opts.listkern:
 			for k in kernels:
-				print('%s:' % k.version)
+				print('%s [%s]:' % (k.version, k.real_kv))
 				for key in k.parts:
 					val = getattr(k, key)
 					if val is not None:
