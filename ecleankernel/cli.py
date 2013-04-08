@@ -160,7 +160,12 @@ def main(argv):
 			for k, reason in removals:
 				remove = True
 				while opts.ask:
-					ans = raw_input('Remove %s (%s)? [Yes/No]'
+					try:
+						input_f = raw_input
+					except NameError:
+						input_f = input
+
+					ans = input_f('Remove %s (%s)? [Yes/No]'
 							% (k.version, ', '.join(reason))).lower()
 					if 'yes'.startswith(ans):
 						break
