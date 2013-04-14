@@ -9,7 +9,7 @@ import os, os.path, errno, shlex
 from optparse import OptionParser
 
 from .bootloader import bootloaders, get_bootloader
-from .kernel import find_kernels, Kernel
+from .kernel import find_kernels, Kernel, ReadAccessError, WriteAccessError
 from .process import get_removal_list
 
 ecleankern_desc = '''
@@ -26,6 +26,10 @@ class DummyMount(object):
 
 	def umount(self):
 		pass
+
+class MountError(Exception):
+	def __init__(self):
+		Exception.__init__(self, 'Unable to mount /boot')
 
 class NullDebugger(object):
 	def __init__(self):
@@ -120,7 +124,11 @@ def main(argv):
 		if opts.mount:
 			bootfs = pymountboot.BootMountpoint()
 
-	bootfs.mount()
+	try:
+		bootfs.mount()
+	except RuntimeError:
+		raise MountError()
+
 	try:
 		kernels = find_kernels(exclusions = exclusions)
 
@@ -187,4 +195,7 @@ def main(argv):
 
 		return 0
 	finally:
-		bootfs.umount()
+		try:
+			bootfs.umount()
+		except RuntimeError:
+			print('Note: unmounting /boot failed')
