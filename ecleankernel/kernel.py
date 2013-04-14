@@ -15,6 +15,20 @@ class ReadAccessError(Exception):
 
 	@property
 	def friendly_desc(self):
+		if os.path.islink(self._path) and not os.access(self._path, os.F_OK):
+			return '''The following file is a dangling symbolic link:
+  %s
+
+This may be just an orphan link but it can also indicate that
+the filesystem containing the link target is not mounted. Since
+the program needs to be able to read all kernel-related files in order
+to properly associate them, the non-existence of the symlink target
+may result in wrong kernels being removed. The program will refuse
+to proceed.
+
+Please check the symbolic link and either fix the underlying issue,
+or remove it manually.''' % self._path
+
 		return '''The following file is not readable:
   %s
 
