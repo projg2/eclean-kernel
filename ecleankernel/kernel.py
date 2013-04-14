@@ -8,6 +8,16 @@ from collections import defaultdict
 from functools import partial
 from glob import glob
 
+class ReadAccessError(Exception):
+	def __init__(self, path):
+		self._path = path
+		Exception.__init__(self, '%s not readable, unable to proceed.' % path)
+
+class WriteAccessError(Exception):
+	def __init__(self, path):
+		self._path = path
+		Exception.__init__(self, '%s not writable, refusing to proceed.' % path)
+
 class PathRef(str):
 	def __init__(self, path):
 		str.__init__(self)
@@ -16,7 +26,7 @@ class PathRef(str):
 	def ref(self):
 		if self._refs == 0:
 			if not os.access(self, os.R_OK):
-				raise OSError('%s not readable, unable to proceed.' % self)
+				raise ReadAccessError(self)
 		self._refs += 1
 
 	def unref(self):
@@ -125,7 +135,7 @@ class Kernel(object):
 		for path in (self.vmlinuz, self.systemmap, self.config,
 				self.initramfs, self.modules, self.build):
 			if path and not os.access(path, os.W_OK):
-				raise OSError('%s not writable, refusing to proceed' % path)
+				raise WriteAccessError(path)
 
 	def __repr__(self):
 		return "Kernel(%s, '%s%s%s%s%s')" % (repr(self.version),
