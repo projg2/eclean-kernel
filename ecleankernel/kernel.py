@@ -13,10 +13,32 @@ class ReadAccessError(Exception):
 		self._path = path
 		Exception.__init__(self, '%s not readable, unable to proceed.' % path)
 
+	@property
+	def friendly_desc(self):
+		return '''The following file is not readable:
+  %s
+
+This usually indicates that you have insufficient permissions to run
+eclean-kernel. The program needs to be able to read all kernel-related
+files in order to properly associate them. Lack of access to some
+of the files may result in wrong kernels being removed and therefore
+the program will refuse to proceed.''' % self._path
+
 class WriteAccessError(Exception):
 	def __init__(self, path):
 		self._path = path
 		Exception.__init__(self, '%s not writable, refusing to proceed.' % path)
+
+	@property
+	def friendly_desc(self):
+		return '''The following file is not writable:
+  %s
+
+This usually indicates that you have insufficient permissions to run
+eclean-kernel. The program needs to be able to remove all the files
+associated with removed kernels. Lack of write access to some of them
+will result in orphan files and therefore the program will refuse
+to proceed.''' % self._path
 
 class PathRef(str):
 	def __init__(self, path):

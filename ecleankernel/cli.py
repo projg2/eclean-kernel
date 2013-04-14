@@ -31,6 +31,16 @@ class MountError(Exception):
 	def __init__(self):
 		Exception.__init__(self, 'Unable to mount /boot')
 
+	@property
+	def friendly_desc(self):
+		return '''The program is unable to mount /boot.
+
+This usually indicates that you have insufficient permissions to run
+eclean-kernel, or your fstab is incorrect. Improperly mounted file-
+systems can result in wrong files being removed, and therefore
+eclean-kernel will refuse to proceed. Please either run the program
+as root, or preferably mount /boot before using it.'''
+
 class NullDebugger(object):
 	def __init__(self):
 		self._indent = 1
@@ -125,77 +135,93 @@ def main(argv):
 			bootfs = pymountboot.BootMountpoint()
 
 	try:
-		bootfs.mount()
-	except RuntimeError:
-		raise MountError()
-
-	try:
-		kernels = find_kernels(exclusions = exclusions)
-
-		if opts.listkern:
-			for k in kernels:
-				print('%s [%s]:' % (k.version, k.real_kv))
-				for key in k.parts:
-					val = getattr(k, key)
-					if val is not None:
-						print('- %s: %s' % (key, val))
-			return 0
-
-		bootloader = get_bootloader(requested = opts.bootloader,
-				debug = debug)
-		removals = get_removal_list(kernels,
-				limit = None if opts.all else opts.num,
-				bootloader = bootloader,
-				destructive = opts.destructive,
-				debug = debug)
-
-		if not removals:
-			print('No outdated kernels found.')
-		elif opts.pretend:
-			print('These are the kernels which would be removed:')
-
-			for k, reason in removals:
-				print('- %s: %s' % (k.version, ', '.join(reason)))
-			if removals and hasattr(bootloader, 'postrm'):
-				print('Bootloader %s config will be updated.' % bootloader.name)
-		else:
-			bootfs.rwmount()
-			for k, reason in removals:
-				k.check_writable()
-
-			nremoved = 0
-
-			for k, reason in removals:
-				remove = True
-				while opts.ask:
-					try:
-						input_f = raw_input
-					except NameError:
-						input_f = input
-
-					ans = input_f('Remove %s (%s)? [Yes/No]'
-							% (k.version, ', '.join(reason))).lower()
-					if 'yes'.startswith(ans):
-						break
-					elif 'no'.startswith(ans):
-						remove = False
-						break
-					else:
-						print('Invalid answer (%s).' % ans)
-
-				if remove:
-					print('* Removing kernel %s (%s)' % (k.version, ', '.join(reason)))
-					del kernels[k.version]
-					nremoved += 1
-
-			if nremoved:
-				print('Removed %d kernels' % nremoved)
-				if hasattr(bootloader, 'postrm'):
-					bootloader.postrm()
-
-		return 0
-	finally:
 		try:
-			bootfs.umount()
+			bootfs.mount()
 		except RuntimeError:
-			print('Note: unmounting /boot failed')
+			raise MountError()
+
+		try:
+			kernels = find_kernels(exclusions = exclusions)
+
+			if opts.listkern:
+				for k in kernels:
+					print('%s [%s]:' % (k.version, k.real_kv))
+					for key in k.parts:
+						val = getattr(k, key)
+						if val is not None:
+							print('- %s: %s' % (key, val))
+				return 0
+
+			bootloader = get_bootloader(requested = opts.bootloader,
+					debug = debug)
+			removals = get_removal_list(kernels,
+					limit = None if opts.all else opts.num,
+					bootloader = bootloader,
+					destructive = opts.destructive,
+					debug = debug)
+
+			if not removals:
+				print('No outdated kernels found.')
+			elif opts.pretend:
+				print('These are the kernels which would be removed:')
+
+				for k, reason in removals:
+					print('- %s: %s' % (k.version, ', '.join(reason)))
+				if removals and hasattr(bootloader, 'postrm'):
+					print('Bootloader %s config will be updated.' % bootloader.name)
+			else:
+				bootfs.rwmount()
+				for k, reason in removals:
+					k.check_writable()
+
+				nremoved = 0
+
+				for k, reason in removals:
+					remove = True
+					while opts.ask:
+						try:
+							input_f = raw_input
+						except NameError:
+							input_f = input
+
+						ans = input_f('Remove %s (%s)? [Yes/No]'
+								% (k.version, ', '.join(reason))).lower()
+						if 'yes'.startswith(ans):
+							break
+						elif 'no'.startswith(ans):
+							remove = False
+							break
+						else:
+							print('Invalid answer (%s).' % ans)
+
+					if remove:
+						print('* Removing kernel %s (%s)' % (k.version, ', '.join(reason)))
+						del kernels[k.version]
+						nremoved += 1
+
+				if nremoved:
+					print('Removed %d kernels' % nremoved)
+					if hasattr(bootloader, 'postrm'):
+						bootloader.postrm()
+
+			return 0
+		finally:
+			try:
+				bootfs.umount()
+			except RuntimeError:
+				print('Note: unmounting /boot failed')
+	except Exception as e:
+		if opts.debug:
+			raise
+		print('eclean-kernel has met the following issue:\n')
+
+		if hasattr(e, 'friendly_desc'):
+			print(e.friendly_desc)
+		else:
+			print('  %s' % e)
+
+		print('''
+If you believe that the mentioned issue is a bug, please report it
+to https://bitbucket.org/mgorny/eclean-kernel/issues. If possible,
+please attach the output of 'eclean-kernel --list-kernels' and your
+regular eclean-kernel call with additional '--debug' argument.''')
