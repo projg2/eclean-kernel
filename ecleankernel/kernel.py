@@ -14,6 +14,9 @@ class PathRef(str):
 		self._refs = 0
 
 	def ref(self):
+		if self._refs == 0:
+			if not os.access(self, os.R_OK):
+				raise OSError('%s not readable, unable to proceed.' % self)
 		self._refs += 1
 
 	def unref(self):
