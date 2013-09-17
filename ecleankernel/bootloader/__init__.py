@@ -8,6 +8,8 @@ from .lilo import LILO
 from .yaboot import Yaboot
 from .symlinks import Symlinks
 
+from .common import BootloaderNotFound
+
 import errno
 
 bootloaders = (LILO, GRUB2, GRUB, Yaboot, Symlinks)
@@ -19,8 +21,7 @@ def get_bootloader(debug, requested = None):
 			debug.indent()
 			try:
 				return bl(debug = debug)
-			except IOError as e:
-				if e.errno != errno.ENOENT:
-					raise
+			except BootloaderNotFound:
+				pass
 			finally:
 				debug.outdent()

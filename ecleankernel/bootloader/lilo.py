@@ -4,7 +4,9 @@
 
 from __future__ import print_function
 
-import re
+from .common import BootloaderNotFound
+
+import errno, re
 
 class LILO(object):
 	name = 'lilo'
@@ -17,9 +19,15 @@ class LILO(object):
 				re.MULTILINE | re.IGNORECASE)
 		self.path = path or self.def_path
 
-		with open(self.path) as f:
-			debug.print('%s found' % (path or self.def_path))
-			self._content = f.read()
+		try:
+			with open(self.path) as f:
+				debug.print('%s found' % self.path)
+				self._content = f.read()
+		except IOError as e:
+			if e.errno != errno.ENOENT:
+				raise
+			else:
+				raise BootloaderNotFound()
 
 	def _get_kernels(self, content):
 		debug = self._debug
