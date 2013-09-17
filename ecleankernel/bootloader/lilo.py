@@ -17,17 +17,21 @@ class LILO(object):
 		self._debug = debug
 		self._kernel_re = re.compile(self.kernel_re,
 				re.MULTILINE | re.IGNORECASE)
-		self.path = path or self.def_path
+		paths = path or self.def_path
+		if not isinstance(paths, tuple):
+			paths = (paths,)
 
-		try:
-			with open(self.path) as f:
-				debug.print('%s found' % self.path)
-				self._content = f.read()
-		except IOError as e:
-			if e.errno != errno.ENOENT:
-				raise
-			else:
-				raise BootloaderNotFound()
+		for p in paths:
+			try:
+				with open(p) as f:
+					debug.print('%s found' % p)
+					self.path = p
+					self._content = f.read()
+			except IOError as e:
+				if e.errno != errno.ENOENT:
+					raise
+		else:
+			raise BootloaderNotFound()
 
 	def _get_kernels(self, content):
 		debug = self._debug
