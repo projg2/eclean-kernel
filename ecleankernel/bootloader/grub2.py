@@ -16,7 +16,7 @@ grub2_autogen_header = '''#
 class GRUB2(GRUB):
 	name = 'grub2'
 	kernel_re = r'^\s*linux\s*(\([^)]+\))?(?P<path>\S+)'
-	def_path = '/boot/grub2/grub.cfg'
+	def_path = ('/boot/grub/grub.cfg', '/boot/grub2/grub.cfg')
 
 	def _get_kernels(self, content):
 		self._autogen = content.startswith(grub2_autogen_header)
