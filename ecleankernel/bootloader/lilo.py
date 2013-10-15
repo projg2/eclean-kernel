@@ -27,6 +27,7 @@ class LILO(object):
 					debug.print('%s found' % p)
 					self.path = p
 					self._content = f.read()
+					break
 			except IOError as e:
 				if e.errno != errno.ENOENT:
 					raise
