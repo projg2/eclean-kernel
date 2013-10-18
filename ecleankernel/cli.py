@@ -4,7 +4,7 @@
 
 from __future__ import print_function
 
-import os, os.path, errno, shlex
+import os, os.path, errno, shlex, time
 
 from optparse import OptionParser
 
@@ -144,12 +144,16 @@ def main(argv):
 			kernels = find_kernels(exclusions = exclusions)
 
 			if opts.listkern:
-				for k in kernels:
+				ordered = sorted(kernels, key = lambda k: k.mtime,
+						reverse = True)
+				for k in ordered:
 					print('%s [%s]:' % (k.version, k.real_kv))
 					for key in k.parts:
 						val = getattr(k, key)
 						if val is not None:
 							print('- %s: %s' % (key, val))
+					print('- last modified: %s' % time.strftime(
+						'%Y-%m-%d %H:%M:%S', time.gmtime(k.mtime)))
 				return 0
 
 			bootloader = get_bootloader(requested = opts.bootloader,
