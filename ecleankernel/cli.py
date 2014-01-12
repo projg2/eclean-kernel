@@ -4,7 +4,7 @@
 
 from __future__ import print_function
 
-import os, os.path, errno, shlex, time
+import os, os.path, errno, shlex, subprocess, time
 
 from optparse import OptionParser
 
@@ -171,6 +171,8 @@ def main(argv):
 
 				for k, reason in removals:
 					print('- %s: %s' % (k.version, ', '.join(reason)))
+				if os.access('/usr/bin/kernel-install', os.X_OK):
+					print('kernel-install will be called to perform prerm tasks.')
 				if removals and hasattr(bootloader, 'postrm'):
 					print('Bootloader %s config will be updated.' % bootloader.name)
 			else:
@@ -200,6 +202,14 @@ def main(argv):
 
 					if remove:
 						print('* Removing kernel %s (%s)' % (k.version, ', '.join(reason)))
+
+						if os.access('/usr/bin/kernel-install', os.X_OK):
+							p = subprocess.Popen(
+									['/usr/bin/kernel-install', 'remove',
+										k.real_kv, k.vmlinuz])
+							if p.wait() != 0:
+								print('* kernel-install exited with %d status' % p.returncode)
+
 						del kernels[k.version]
 						nremoved += 1
 
