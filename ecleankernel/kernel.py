@@ -144,7 +144,7 @@ class Kernel(object):
 		buf = f.read(0x10)
 		if buf[2:6] != b'HdrS':
 			raise NotImplementedError('Invalid magic for kernel file %s (!= HdrS)'
-					% path)
+					% vmlinuz)
 		offset = struct.unpack_from('H', buf, 0x0e)[0]
 		f.seek(offset - 0x10, 1)
 		buf = f.read(0x100) # XXX
