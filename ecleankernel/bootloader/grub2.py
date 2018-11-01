@@ -31,4 +31,10 @@ class GRUB2(GRUB):
     def _postrm(self):
         if self._autogen:
             self._debug.print('Calling grub2-mkconfig')
-            subprocess.call(['grub2-mkconfig', '-o', self.path])
+            try:
+                subprocess.call(['grub-mkconfig', '-o', self.path])
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise
+            else:
+                subprocess.call(['grub2-mkconfig', '-o', self.path])
