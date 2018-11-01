@@ -219,9 +219,12 @@ def main(argv):
                               (k.version, ', '.join(reason)))
 
                         if os.access('/usr/bin/kernel-install', os.X_OK):
-                            p = subprocess.Popen(
-                                ['/usr/bin/kernel-install', 'remove',
-                                 k.real_kv, k.vmlinuz])
+                            cmd = ['/usr/bin/kernel-install', 'remove']
+                            if k.vmlinuz is not None:
+                                cmd.extend([k.real_kv, k.vmlinuz])
+                            else:
+                                cmd.append(k.version)
+                            p = subprocess.Popen(cmd)
                             if p.wait() != 0:
                                 print('* kernel-install exited with'
                                       + '%d status' % p.returncode)
