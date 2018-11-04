@@ -266,6 +266,6 @@ def main(argv):
 
         print('''
 If you believe that the mentioned issue is a bug, please report it
-to https://bitbucket.org/mgorny/eclean-kernel/issues. If possible,
+to https://github.com/mgorny/eclean-kernel/issues. If possible,
 please attach the output of 'eclean-kernel --list-kernels' and your
 regular eclean-kernel call with additional '--debug' argument.''')

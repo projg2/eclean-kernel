@@ -136,7 +136,7 @@ reporting a bug, please attach the outputs of::
 
 If relevant, please attach bootloader configuration files as well.
 
-.. _the issue tracker: https://bitbucket.org/mgorny/eclean-kernel/issues/
+.. _the issue tracker: https://github.com/mgorny/eclean-kernel/issues
 .. _Gentoo Bugzilla: https://bugs.gentoo.org/
 
 
