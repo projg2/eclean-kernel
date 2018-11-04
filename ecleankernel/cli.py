@@ -1,5 +1,5 @@
 # vim:fileencoding=utf-8
-# (c) 2011 Michał Górny <mgorny@gentoo.org>
+# (c) 2011-2018 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
 from __future__ import print_function
@@ -262,7 +262,7 @@ def main(argv):
         if hasattr(e, 'friendly_desc'):
             print(e.friendly_desc)
         else:
-            print('  %s' % e)
+            print('  %r' % e)
 
         print('''
 If you believe that the mentioned issue is a bug, please report it
