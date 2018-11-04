@@ -176,6 +176,17 @@ def main(argv):
                                         destructive=opts.destructive,
                                         debug=debug)
 
+            has_kernel_install = False
+            try:
+                subprocess.Popen(['kernel-install', '--help'],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE).communicate()
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise
+            else:
+                has_kernel_install = True
+
             if not removals:
                 print('No outdated kernels found.')
             elif opts.pretend:
@@ -183,7 +194,7 @@ def main(argv):
 
                 for k, reason in removals:
                     print('- %s: %s' % (k.version, ', '.join(reason)))
-                if os.access('/usr/bin/kernel-install', os.X_OK):
+                if has_kernel_install:
                     print('kernel-install will be called to perform'
                           + ' prerm tasks.')
                 if removals and hasattr(bootloader, 'postrm'):
@@ -218,8 +229,8 @@ def main(argv):
                         print('* Removing kernel %s (%s)' %
                               (k.version, ', '.join(reason)))
 
-                        if os.access('/usr/bin/kernel-install', os.X_OK):
-                            cmd = ['/usr/bin/kernel-install', 'remove']
+                        if has_kernel_install:
+                            cmd = ['kernel-install', 'remove']
                             if k.vmlinuz is not None:
                                 cmd.extend([k.real_kv, k.vmlinuz])
                             else:
