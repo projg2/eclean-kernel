@@ -2,6 +2,7 @@
 # (c) 2011-2020 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
+import errno
 import subprocess
 
 from .grub import GRUB

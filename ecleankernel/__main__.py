@@ -12,7 +12,7 @@ import sys
 import time
 
 from .bootloader import bootloaders, get_bootloader
-from .kernel import find_kernels, Kernel, ReadAccessError, WriteAccessError
+from .kernel import find_kernels, Kernel
 from .process import get_removal_list
 
 ecleankern_desc = '''

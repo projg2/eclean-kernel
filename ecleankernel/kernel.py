@@ -183,13 +183,13 @@ class Kernel(object):
                 raise WriteAccessError(path)
 
     def __repr__(self):
-        return "Kernel(%s, '%s%s%s%s%s')" % (repr(self.version),
-                                             'V' if self.vmlinuz else ' ',
-                                             'S' if self.systemmap else ' ',
-                                             'C' if self.config else ' ',
-                                             'I' if self.initramfs else ' ',
-                                             'M' if self.modules else ' ',
-                                             'B' if self.build else ' ')
+        return "Kernel(%s, '%s%s%s%s%s%s')" % (repr(self.version),
+                                               'V' if self.vmlinuz else ' ',
+                                               'S' if self.systemmap else ' ',
+                                               'C' if self.config else ' ',
+                                               'I' if self.initramfs else ' ',
+                                               'M' if self.modules else ' ',
+                                               'B' if self.build else ' ')
 
 
 class PathDict(defaultdict):

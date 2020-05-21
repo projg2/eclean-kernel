@@ -10,8 +10,6 @@ from .symlinks import Symlinks
 
 from .common import BootloaderNotFound
 
-import errno
-
 bootloaders = (LILO, GRUB2, GRUB, Yaboot, Symlinks)
 
 
