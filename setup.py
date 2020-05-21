@@ -3,25 +3,18 @@
 # (c) 2011 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 
-import os.path
-import sys
-
-sys.path.insert(0, os.path.dirname(__file__))
-try:
-    from ecleankernel import PV
-except ImportError:
-    PV = 'unknown'
+from ecleankernel import __version__
 
 setup(
     name='eclean-kernel',
-    version=PV,
+    version=__version__,
     author='Michał Górny',
     author_email='mgorny@gentoo.org',
     url='http://github.com/mgorny/eclean-kernel',
 
-    packages=['ecleankernel', 'ecleankernel.bootloader'],
+    packages=find_packages(exclude=['test']),
     scripts=['eclean-kernel'],
 
     classifiers=[
