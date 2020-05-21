@@ -15,7 +15,11 @@ setup(
     url='http://github.com/mgorny/eclean-kernel',
 
     packages=find_packages(exclude=['test']),
-    scripts=['eclean-kernel'],
+    entry_points={
+        'console_scripts': [
+            'eclean-kernel=ecleankernel:setuptools_main',
+        ],
+    },
 
     classifiers=[
         'Development Status :: 4 - Beta',

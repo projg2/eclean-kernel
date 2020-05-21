@@ -7,6 +7,7 @@ import os.path
 import errno
 import shlex
 import subprocess
+import sys
 import time
 
 from optparse import OptionParser
@@ -121,7 +122,7 @@ def main(argv):
         else:
             args.extend(shlex.split(f.read(), comments=True))
 
-    args.extend(argv[1:])
+    args.extend(argv)
     (opts, args) = parser.parse_args(args)
 
     exclusions = frozenset(opts.exclude.split(','))
@@ -267,3 +268,11 @@ If you believe that the mentioned issue is a bug, please report it
 to https://github.com/mgorny/eclean-kernel/issues. If possible,
 please attach the output of 'eclean-kernel --list-kernels' and your
 regular eclean-kernel call with additional '--debug' argument.''')
+
+
+def setuptools_main() -> None:
+    sys.exit(main(sys.argv[1:]))
+
+
+if __name__ == '__main__':
+    setuptools_main()
