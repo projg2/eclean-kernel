@@ -8,7 +8,7 @@ import typing
 from glob import glob
 from pathlib import Path
 
-from ecleankernel.kernel import KernelDict, PathDict
+from ecleankernel.kernel import Kernel, PathDict
 
 
 class StdLayout(object):
@@ -23,12 +23,12 @@ class StdLayout(object):
                      exclusions: typing.List[str] = [],
                      boot_directory: Path = Path('/boot'),
                      module_directory: Path = Path('/lib/modules')
-                     ) -> KernelDict:
+                     ) -> typing.List[Kernel]:
         """
         Find all files and directories related to installed kernels
 
-        Find all kernel files and related data and return them
-        as a `KernelDict`.  `exclusions` specifies kernel parts
+        Find all kernel files and related data and return a list
+        of `Kernel` objects.  `exclusions` specifies kernel parts
         to ignore.  `boot_directory` and `module_directory` specify
         paths to find kernels in.
         """
@@ -48,7 +48,7 @@ class StdLayout(object):
         # paths can repeat, so keep them sorted
         paths = PathDict()
 
-        kernels = KernelDict()
+        kernels: typing.Dict[str, Kernel] = {}
         for cat, g in globs:
             if cat in exclusions:
                 continue
@@ -62,7 +62,7 @@ class StdLayout(object):
                     continue
 
                 path = paths[m]
-                newk = kernels[kv]
+                newk = kernels.setdefault(kv, Kernel(kv))
                 try:
                     setattr(newk, cat, path)
                 except KeyError:
@@ -90,7 +90,7 @@ class StdLayout(object):
                         newk.build = paths[builddir]
 
         # fill .old files
-        for k in kernels:
+        for k in kernels.values():
             if '%s.old' % k.version in kernels:
                 oldk = kernels['%s.old' % k.version]
                 # it seems that these are renamed .old sometimes
@@ -99,4 +99,4 @@ class StdLayout(object):
                 if not oldk.config and k.config:
                     oldk.config = k.config
 
-        return kernels
+        return list(kernels.values())

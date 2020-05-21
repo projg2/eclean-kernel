@@ -158,7 +158,8 @@ def main(argv):
             kernels = layout.find_kernels(exclusions=exclusions)
 
             if args.list_kernels:
-                ordered = sorted(kernels, key=lambda k: k.mtime,
+                ordered = sorted(kernels,
+                                 key=lambda k: k.mtime,
                                  reverse=True)
                 for k in ordered:
                     print('%s [%s]:' % (k.version, k.real_kv))
@@ -242,7 +243,7 @@ def main(argv):
                                 print('* kernel-install exited with'
                                       + '%d status' % p.returncode)
 
-                        del kernels[k.version]
+                        k.unrefall()
                         nremoved += 1
 
                 if nremoved:

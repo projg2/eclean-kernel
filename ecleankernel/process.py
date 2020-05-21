@@ -5,6 +5,9 @@
 import os
 import os.path
 import re
+import typing
+
+from ecleankernel.kernel import Kernel
 
 
 class RemovedKernelDict(dict):
@@ -17,15 +20,20 @@ class RemovedKernelDict(dict):
         return iter(self.items())
 
 
-def remove_stray(kernels):
+def remove_stray(kernels: typing.Iterable[Kernel]
+                 ) -> typing.Iterable[Kernel]:
     """ Remove files for non-existing kernels (without vmlinuz). """
     for k in kernels:
         if k.vmlinuz is None:
             yield k
 
 
-def get_removal_list(kernels, debug, limit=0,
-                     bootloader=None, destructive=False):
+def get_removal_list(kernels: typing.List[Kernel],
+                     debug: typing.Any,
+                     limit: int = 0,
+                     bootloader: typing.Optional[typing.Any] = None,
+                     destructive: bool = False
+                     ) -> typing.List[typing.Tuple[str, Kernel]]:
     """ Get a list of outdated kernels to remove. With explanations. """
 
     debug.indent(heading='In get_removal_list()')
@@ -74,6 +82,7 @@ def get_removal_list(kernels, debug, limit=0,
             if destructive:
                 out.add(k, 'unwanted')
             elif k.version not in used:
+                assert bootloader is not None
                 out.add(k, 'not referenced by bootloader (%s)' %
                         bootloader.name)
 

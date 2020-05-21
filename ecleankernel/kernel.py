@@ -202,23 +202,3 @@ class PathDict(defaultdict):
         if not defaultdict.__contains__(self, path):
             self[path] = PathRef(path)
         return self[path]
-
-
-class KernelDict(defaultdict):
-    def __missing__(self, kv):
-        k = Kernel(kv)
-        self[kv] = k
-        return k
-
-    def __delitem__(self, kv):
-        if kv not in self:
-            raise KeyError(kv)
-        self[kv].unrefall()
-        defaultdict.__delitem__(self, kv)
-
-    def __iter__(self):
-        return iter(self.values())
-
-    def __repr__(self):
-        return 'KernelDict(%s)' % ','.join(
-            ['\n\t%s' % repr(x) for x in self.values()])

@@ -7,16 +7,16 @@ import unittest
 
 from pathlib import Path
 
-from ecleankernel.kernel import Kernel, KernelDict
+from ecleankernel.kernel import Kernel
 from ecleankernel.layout.std import StdLayout
 
 
 TEST_DATA_DIR = Path(__file__).parent / 'data'
 
 
-def kernel_paths(kd: KernelDict
-                 ) -> typing.List[typing.Tuple[str, ...]]:
-    """Get iterable of tuples for matching a `KernelDict`"""
+def kernel_paths(kd: typing.List[Kernel]
+                 ) -> typing.Iterable[typing.Tuple[str, ...]]:
+    """Get iterable of tuples for matching a kernel dict"""
     for k in kd:
         yield (
             k.version,
