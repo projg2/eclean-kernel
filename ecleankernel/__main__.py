@@ -2,6 +2,7 @@
 # (c) 2011-2020 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
+import argparse
 import os
 import os.path
 import errno
@@ -9,8 +10,6 @@ import shlex
 import subprocess
 import sys
 import time
-
-from optparse import OptionParser
 
 from .bootloader import bootloaders, get_bootloader
 from .kernel import find_kernels, Kernel, ReadAccessError, WriteAccessError
@@ -74,43 +73,45 @@ class ConsoleDebugger(NullDebugger):
 
 
 def main(argv):
-    parser = OptionParser(description=ecleankern_desc.strip())
-    parser.add_option('-a', '--all',
-                      dest='all', action='store_true', default=False,
+    argp = argparse.ArgumentParser(description=ecleankern_desc.strip())
+    argp.add_argument('-a', '--all',
+                      action='store_true',
                       help='Remove all kernels unless used by bootloader')
-    parser.add_option('-A', '--ask',
-                      dest='ask', action='store_true', default=False,
+    argp.add_argument('-A', '--ask',
+                      action='store_true',
                       help='Ask before removing each kernel')
-    parser.add_option('-b', '--bootloader',
-                      dest='bootloader', default='auto',
+    argp.add_argument('-b', '--bootloader',
+                      default='auto',
                       help='Bootloader used (auto, %s)'
                             % ', '.join([b.name for b in bootloaders]))
-    parser.add_option('-d', '--destructive',
-                      dest='destructive', action='store_true', default=False,
-                      help='Destructive mode: remove kernels even when'
-                           + ' referenced by bootloader')
-    parser.add_option('-D', '--debug',
-                      dest='debug', action='store_true', default=False,
+    argp.add_argument('-d', '--destructive',
+                      action='store_true',
+                      help='Destructive mode: remove kernels even when '
+                           'referenced by bootloader')
+    argp.add_argument('-D', '--debug',
+                      action='store_true',
                       help='Enable debugging output')
-    parser.add_option('-l', '--list-kernels',
-                      dest='listkern', action='store_true', default=False,
+    argp.add_argument('-l', '--list-kernels',
+                      action='store_true',
                       help='List kernel files and exit')
-    parser.add_option('-M', '--no-mount',
-                      dest='mount', action='store_false', default=True,
+    argp.add_argument('-M', '--no-mount',
+                      action='store_false',
                       help='Disable (re-)mounting /boot if necessary')
-    parser.add_option('-n', '--num',
-                      dest='num', type='int', default=0,
+    argp.add_argument('-n', '--num',
+                      type=int,
+                      default=0,
                       help='Leave only newest NUM kernels (by mtime)')
-    parser.add_option('-p', '--pretend',
-                      dest='pretend', action='store_true', default=False,
-                      help='Print the list of kernels to be removed and exit')
-    parser.add_option('-x', '--exclude',
-                      dest='exclude', default='',
-                      help='Exclude kernel parts from being removed'
-                           + '(comma-separated, supported parts: %s)'
-                            % ', '.join(Kernel.parts))
+    argp.add_argument('-p', '--pretend',
+                      action='store_true',
+                      help='Print the list of kernels to be removed '
+                           'and exit')
+    argp.add_argument('-x', '--exclude',
+                      default='',
+                      help='Exclude kernel parts from being removed '
+                           '(comma-separated, supported parts: %s)'
+                           % ', '.join(Kernel.parts))
 
-    args = []
+    all_args = []
     config_dirs = os.environ.get('XDG_CONFIG_DIRS', '/etc/xdg').split(':')
     config_dirs.insert(0, os.environ.get('XDG_CONFIG_HOME', '~/.config'))
     for x in reversed(config_dirs):
@@ -120,21 +121,21 @@ def main(argv):
             if e.errno != errno.ENOENT:
                 raise
         else:
-            args.extend(shlex.split(f.read(), comments=True))
+            all_args.extend(shlex.split(f.read(), comments=True))
 
-    args.extend(argv)
-    (opts, args) = parser.parse_args(args)
+    all_args.extend(argv)
+    args = argp.parse_args(all_args)
 
-    exclusions = frozenset(opts.exclude.split(','))
+    exclusions = frozenset(args.exclude.split(','))
     for x in exclusions:
         if not x:
             pass
         elif x not in Kernel.parts:
-            parser.error('Invalid kernel part: %s' % x)
+            argp.error('Invalid kernel part: %s' % x)
         elif x == 'vmlinuz':
-            parser.error('Kernel exclusion unsupported')
+            argp.error('Kernel exclusion unsupported')
 
-    debug = ConsoleDebugger() if opts.debug else NullDebugger()
+    debug = ConsoleDebugger() if args.debug else NullDebugger()
 
     bootfs = DummyMount()
     try:
@@ -142,7 +143,7 @@ def main(argv):
     except ImportError:
         debug.print('unable to import pymountboot, /boot mounting disabled.')
     else:
-        if opts.mount:
+        if args.mount:
             bootfs = pymountboot.BootMountpoint()
 
     try:
@@ -154,7 +155,7 @@ def main(argv):
         try:
             kernels = find_kernels(exclusions=exclusions)
 
-            if opts.listkern:
+            if args.list_kernels:
                 ordered = sorted(kernels, key=lambda k: k.mtime,
                                  reverse=True)
                 for k in ordered:
@@ -167,12 +168,12 @@ def main(argv):
                         '%Y-%m-%d %H:%M:%S', time.gmtime(k.mtime)))
                 return 0
 
-            bootloader = get_bootloader(requested=opts.bootloader,
+            bootloader = get_bootloader(requested=args.bootloader,
                                         debug=debug)
             removals = get_removal_list(kernels,
-                                        limit=None if opts.all else opts.num,
+                                        limit=None if args.all else args.num,
                                         bootloader=bootloader,
-                                        destructive=opts.destructive,
+                                        destructive=args.destructive,
                                         debug=debug)
 
             has_kernel_install = False
@@ -188,7 +189,7 @@ def main(argv):
 
             if not removals:
                 print('No outdated kernels found.')
-            elif opts.pretend:
+            elif args.pretend:
                 print('These are the kernels which would be removed:')
 
                 for k, reason in removals:
@@ -208,7 +209,7 @@ def main(argv):
 
                 for k, reason in removals:
                     remove = True
-                    while opts.ask:
+                    while args.ask:
                         try:
                             input_f = raw_input
                         except NameError:
@@ -254,7 +255,7 @@ def main(argv):
             except RuntimeError:
                 print('Note: unmounting /boot failed')
     except Exception as e:
-        if opts.debug:
+        if args.debug:
             raise
         print('eclean-kernel has met the following issue:\n')
 
