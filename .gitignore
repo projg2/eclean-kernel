@@ -1,5 +1,6 @@
 /MANIFEST
 /build/
+/.coverage
 /.mypy_cache/
 /.tox/
 

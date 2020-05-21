@@ -6,6 +6,7 @@ import os.path
 import typing
 
 from glob import glob
+from pathlib import Path
 
 from ecleankernel.kernel import KernelDict, PathDict
 
@@ -20,8 +21,8 @@ class StdLayout(object):
 
     def find_kernels(self,
                      exclusions: typing.List[str] = [],
-                     boot_directory: str = '/boot',
-                     module_directory: str = '/lib/modules'
+                     boot_directory: Path = Path('/boot'),
+                     module_directory: Path = Path('/lib/modules')
                      ) -> KernelDict:
         """
         Find all files and directories related to installed kernels
@@ -55,6 +56,8 @@ class StdLayout(object):
                 kv = m[len(g):]
                 if cat == 'initramfs' and kv.endswith('.img'):
                     kv = kv[:-4]
+                elif cat == 'initramfs' and kv.endswith('.img.old'):
+                    kv = kv[:-8] + '.old'
                 elif cat == 'modules' and m in paths:
                     continue
 
