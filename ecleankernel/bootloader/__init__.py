@@ -1,14 +1,14 @@
 # vim:fileencoding=utf-8
-# (c) 2011 Michał Górny <mgorny@gentoo.org>
+# (c) 2011-2020 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
-from .grub import GRUB
-from .grub2 import GRUB2
-from .lilo import LILO
-from .yaboot import Yaboot
-from .symlinks import Symlinks
+from ecleankernel.bootloader.grub import GRUB
+from ecleankernel.bootloader.grub2 import GRUB2
+from ecleankernel.bootloader.lilo import LILO
+from ecleankernel.bootloader.yaboot import Yaboot
+from ecleankernel.bootloader.symlinks import Symlinks
 
-from .common import BootloaderNotFound
+from ecleankernel.bootloader.common import BootloaderNotFound
 
 bootloaders = (LILO, GRUB2, GRUB, Yaboot, Symlinks)
 

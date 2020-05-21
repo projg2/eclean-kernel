@@ -11,9 +11,9 @@ import subprocess
 import sys
 import time
 
-from .bootloader import bootloaders, get_bootloader
-from .kernel import find_kernels, Kernel
-from .process import get_removal_list
+from ecleankernel.bootloader import bootloaders, get_bootloader
+from ecleankernel.kernel import find_kernels, Kernel
+from ecleankernel.process import get_removal_list
 
 ecleankern_desc = '''
 Remove old kernel versions, keeping either N newest kernels (with -n)
