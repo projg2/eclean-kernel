@@ -15,30 +15,33 @@ class StdLayout(object):
     Standard /boot layout used by pre-systemd-boot bootloaders
 
     A standard /boot layout presuming that all kernel files are placed
-    directly in /boot directory.  `exclusions` specifies kernel parts
-    to ignore.
+    directly in /boot directory.
     """
 
     def find_kernels(self,
-                     exclusions: typing.List[str] = []
+                     exclusions: typing.List[str] = [],
+                     boot_directory: str = '/boot',
+                     module_directory: str = '/lib/modules'
                      ) -> KernelDict:
         """
         Find all files and directories related to installed kernels
 
         Find all kernel files and related data and return them
-        as a `KernelDict`.
+        as a `KernelDict`.  `exclusions` specifies kernel parts
+        to ignore.  `boot_directory` and `module_directory` specify
+        paths to find kernels in.
         """
 
         globs = [
-            ('vmlinuz', '/boot/vmlinuz-'),
-            ('vmlinuz', '/boot/vmlinux-'),
-            ('vmlinuz', '/boot/kernel-'),
-            ('vmlinuz', '/boot/bzImage-'),
-            ('systemmap', '/boot/System.map-'),
-            ('config', '/boot/config-'),
-            ('initramfs', '/boot/initramfs-'),
-            ('initramfs', '/boot/initrd-'),
-            ('modules', '/lib/modules/')
+            ('vmlinuz', f'{boot_directory}/vmlinuz-'),
+            ('vmlinuz', f'{boot_directory}/vmlinux-'),
+            ('vmlinuz', f'{boot_directory}/kernel-'),
+            ('vmlinuz', f'{boot_directory}/bzImage-'),
+            ('systemmap', f'{boot_directory}/System.map-'),
+            ('config', f'{boot_directory}/config-'),
+            ('initramfs', f'{boot_directory}/initramfs-'),
+            ('initramfs', f'{boot_directory}/initrd-'),
+            ('modules', f'{module_directory}/'),
         ]
 
         # paths can repeat, so keep them sorted
