@@ -6,12 +6,13 @@ from .common import BootloaderNotFound
 
 import errno
 import re
+import typing
 
 
 class LILO(object):
     name = 'lilo'
     kernel_re = r'^\s*image\s*=\s*(?P<path>.+)\s*$'
-    def_path = '/etc/lilo.conf'
+    def_path: typing.Tuple[str, ...] = ('/etc/lilo.conf',)
 
     def __init__(self, debug=False, path=None):
         self._debug = debug

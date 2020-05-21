@@ -7,4 +7,4 @@ from .lilo import LILO
 
 class Yaboot(LILO):
     name = 'yaboot'
-    def_path = '/etc/yaboot.conf'
+    def_path = ('/etc/yaboot.conf',)
