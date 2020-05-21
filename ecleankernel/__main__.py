@@ -12,7 +12,8 @@ import sys
 import time
 
 from ecleankernel.bootloader import bootloaders, get_bootloader
-from ecleankernel.kernel import find_kernels, Kernel
+from ecleankernel.kernel import Kernel
+from ecleankernel.layout.std import StdLayout
 from ecleankernel.process import get_removal_list
 
 ecleankern_desc = '''
@@ -153,7 +154,8 @@ def main(argv):
             raise MountError()
 
         try:
-            kernels = find_kernels(exclusions=exclusions)
+            layout = StdLayout()
+            kernels = layout.find_kernels(exclusions=exclusions)
 
             if args.list_kernels:
                 ordered = sorted(kernels, key=lambda k: k.mtime,
