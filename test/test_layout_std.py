@@ -68,6 +68,7 @@ class StdLayoutTests(unittest.TestCase):
         test_spec += [f'{x}.old' for x in test_spec]
         test_spec += [
             'lib/modules/1.2.3/test.ko',
+            'lib/modules/1.2.3/build/Makefile',
         ]
         with make_test_files(test_spec) as td_inst:
             td = Path(td_inst)
@@ -87,7 +88,7 @@ class StdLayoutTests(unittest.TestCase):
                   str(boot / 'System.map-1.2.3'),
                   str(boot / 'config-1.2.3'),
                   str(modules / '1.2.3'),
-                  None,
+                  str(modules / '1.2.3/build'),
                   str(boot / 'initrd-1.2.3.img'),
                   '1.2.3'),
                  ('1.2.3.old',
@@ -95,6 +96,39 @@ class StdLayoutTests(unittest.TestCase):
                   str(boot / 'System.map-1.2.3.old'),
                   str(boot / 'config-1.2.3.old'),
                   str(modules / '1.2.3'),
-                  None,
+                  str(modules / '1.2.3/build'),
                   str(boot / 'initrd-1.2.3.img.old'),
                   '1.2.3')])
+
+    def test_modules_only(self) -> None:
+        test_spec = [
+            'lib/modules/1.2.3/test.ko',
+            'lib/modules/1.2.4/test.ko',
+            'lib/modules/1.2.4/build/Makefile',
+        ]
+        with make_test_files(test_spec) as td_inst:
+            td = Path(td_inst)
+            boot = td / 'boot'
+            modules = td / 'lib/modules'
+
+            self.assertEqual(
+                sorted(kernel_paths(
+                    StdLayout().find_kernels(
+                        boot_directory=boot,
+                        module_directory=modules))),
+                [('1.2.3',
+                  None,
+                  None,
+                  None,
+                  str(modules / '1.2.3'),
+                  None,
+                  None,
+                  None),
+                 ('1.2.4',
+                  None,
+                  None,
+                  None,
+                  str(modules / '1.2.4'),
+                  str(modules / '1.2.4/build'),
+                  None,
+                  None)])
