@@ -1,5 +1,6 @@
 /MANIFEST
 /build/
+/.mypy_cache/
 /.tox/
 
 *.pyc
