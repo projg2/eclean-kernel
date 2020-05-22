@@ -36,13 +36,13 @@ def get_removable_files(removed_kernels: RemovableKernelDict,
     remaining_kernels = [k for k in all_kernels
                          if k not in removed_kernels]
     used_files = frozenset(
-        itertools.chain.from_iterable(
+        f.path for f in itertools.chain.from_iterable(
             x.all_files for x in remaining_kernels))
 
     for k, reason in removed_kernels.items():
         files = [
-            f for f in k.all_files
-            if not any(os.path.samefile(f, of) for of in used_files)]
+            f.path for f in k.all_files
+            if not any(os.path.samefile(f.path, of) for of in used_files)]
         yield RemovableKernelFiles(k, reason, files)
 
 

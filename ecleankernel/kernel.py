@@ -6,8 +6,6 @@ import os
 import os.path
 import typing
 
-from pathlib import Path
-
 from ecleankernel.file import GenericFile
 
 
@@ -50,12 +48,12 @@ class Kernel(object):
              'modules', 'build')
 
     @property
-    def all_files(self) -> typing.Iterator[Path]:
+    def all_files(self) -> typing.Iterator[GenericFile]:
         """Return a generator over all associated files (parts)"""
         for part in self.parts:
             f = getattr(self, part)
             if f is not None:
-                yield f.path
+                yield f
 
     @property
     def real_kv(self):

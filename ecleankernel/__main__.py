@@ -203,11 +203,11 @@ def main(argv):
                 for k, reason, files in file_removals:
                     print('- %s: %s' % (k.version, ', '.join(reason)))
                     for f in k.all_files:
-                        if f in files:
+                        if f.path in files:
                             sign = '-'
                         else:
                             sign = '+'
-                        print(f' [{sign}] {f}')
+                        print(f' [{sign}] {f.path}')
                 if has_kernel_install:
                     print('kernel-install will be called to perform'
                           + ' prerm tasks.')
@@ -259,16 +259,16 @@ def main(argv):
                                   + '%d status' % p.returncode)
 
                     for f in k.all_files:
-                        if f in files:
+                        if f.path in files:
                             sign = '-'
                         else:
                             sign = '+'
-                        print(f' [{sign}] {f}')
-                        if f in files:
-                            if os.path.isdir(f):
-                                shutil.rmtree(f)
+                        print(f' [{sign}] {f.path}')
+                        if f.path in files:
+                            if os.path.isdir(f.path):
+                                shutil.rmtree(f.path)
                             else:
-                                os.unlink(f)
+                                os.unlink(f.path)
                     nremoved += 1
 
                 if nremoved:
