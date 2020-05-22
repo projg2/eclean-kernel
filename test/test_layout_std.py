@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 
 from ecleankernel.file import KernelFileType as KFT
-from ecleankernel.file import GenericFile
+from ecleankernel.file import GenericFile, KernelImage, ModuleDirectory
 from ecleankernel.kernel import Kernel
 from ecleankernel.layout.std import StdLayout
 
@@ -58,7 +58,10 @@ class StdLayoutTests(unittest.TestCase):
         test_spec += [f'{x}.old' for x in test_spec]
         test_spec += [
             'lib/modules/1.2.3/test.ko',
-            'lib/modules/1.2.3/build/Makefile',
+            'usr/src/linux/Makefile',
+            # stray files
+            'boot/System.map',
+            'boot/config-',
         ]
         with make_test_files(test_spec) as td_inst:
             td = Path(td_inst)
@@ -67,6 +70,7 @@ class StdLayoutTests(unittest.TestCase):
 
             write_bzImage(boot / 'vmlinuz-1.2.3', b'1.2.3 test')
             write_bzImage(boot / 'vmlinuz-1.2.3.old', b'1.2.3 test')
+            os.symlink('../../usr/src/linux', modules / '1.2.3/build')
 
             self.assertEqual(
                 sorted(kernel_paths(
@@ -77,18 +81,20 @@ class StdLayoutTests(unittest.TestCase):
                   [GenericFile(boot / 'System.map-1.2.3', KFT.SYSTEM_MAP),
                    GenericFile(boot / 'config-1.2.3', KFT.CONFIG),
                    GenericFile(boot / 'initrd-1.2.3.img', KFT.INITRAMFS),
-                   GenericFile(boot / 'vmlinuz-1.2.3', KFT.KERNEL),
-                   GenericFile(modules / '1.2.3', KFT.MODULES),
-                   GenericFile(modules / '1.2.3/build', KFT.BUILD),
+                   KernelImage(boot / 'vmlinuz-1.2.3'),
+                   ModuleDirectory(modules / '1.2.3'),
+                   GenericFile(modules / '1.2.3/../../usr/src/linux',
+                               KFT.BUILD),
                    ],
                   '1.2.3'),
                  ('1.2.3.old',
                   [GenericFile(boot / 'System.map-1.2.3.old', KFT.SYSTEM_MAP),
                    GenericFile(boot / 'config-1.2.3.old', KFT.CONFIG),
                    GenericFile(boot / 'initrd-1.2.3.img.old', KFT.INITRAMFS),
-                   GenericFile(boot / 'vmlinuz-1.2.3.old', KFT.KERNEL),
-                   GenericFile(modules / '1.2.3', KFT.MODULES),
-                   GenericFile(modules / '1.2.3/build', KFT.BUILD),
+                   KernelImage(boot / 'vmlinuz-1.2.3.old'),
+                   ModuleDirectory(modules / '1.2.3'),
+                   GenericFile(modules / '1.2.3/../../usr/src/linux',
+                               KFT.BUILD),
                    ],
                   '1.2.3')])
 
@@ -96,12 +102,14 @@ class StdLayoutTests(unittest.TestCase):
         test_spec = [
             'lib/modules/1.2.3/test.ko',
             'lib/modules/1.2.4/test.ko',
-            'lib/modules/1.2.4/build/Makefile',
+            'usr/src/linux/Makefile',
         ]
         with make_test_files(test_spec) as td_inst:
             td = Path(td_inst)
             boot = td / 'boot'
             modules = td / 'lib/modules'
+
+            os.symlink('../../usr/src/linux', modules / '1.2.4/build')
 
             self.assertEqual(
                 sorted(kernel_paths(
@@ -109,11 +117,12 @@ class StdLayoutTests(unittest.TestCase):
                         boot_directory=boot,
                         module_directory=modules))),
                 [('1.2.3',
-                  [GenericFile(modules / '1.2.3', KFT.MODULES)
+                  [ModuleDirectory(modules / '1.2.3')
                    ],
                   None),
                  ('1.2.4',
-                  [GenericFile(modules / '1.2.4', KFT.MODULES),
-                   GenericFile(modules / '1.2.4/build', KFT.BUILD)
+                  [ModuleDirectory(modules / '1.2.4'),
+                   GenericFile(modules / '1.2.4/../../usr/src/linux',
+                               KFT.BUILD)
                    ],
                   None)])
