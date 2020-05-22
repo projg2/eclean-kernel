@@ -70,7 +70,7 @@ class StdLayoutTests(unittest.TestCase):
 
             write_bzImage(boot / 'vmlinuz-1.2.3', b'1.2.3 test')
             write_bzImage(boot / 'vmlinuz-1.2.3.old', b'1.2.3 test')
-            os.symlink('../../usr/src/linux', modules / '1.2.3/build')
+            os.symlink('../../../usr/src/linux', modules / '1.2.3/build')
 
             self.assertEqual(
                 sorted(kernel_paths(
@@ -83,7 +83,7 @@ class StdLayoutTests(unittest.TestCase):
                    GenericFile(boot / 'initrd-1.2.3.img', KFT.INITRAMFS),
                    KernelImage(boot / 'vmlinuz-1.2.3'),
                    ModuleDirectory(modules / '1.2.3'),
-                   GenericFile(modules / '1.2.3/../../usr/src/linux',
+                   GenericFile(modules / '1.2.3/../../../usr/src/linux',
                                KFT.BUILD),
                    ],
                   '1.2.3'),
@@ -93,7 +93,7 @@ class StdLayoutTests(unittest.TestCase):
                    GenericFile(boot / 'initrd-1.2.3.img.old', KFT.INITRAMFS),
                    KernelImage(boot / 'vmlinuz-1.2.3.old'),
                    ModuleDirectory(modules / '1.2.3'),
-                   GenericFile(modules / '1.2.3/../../usr/src/linux',
+                   GenericFile(modules / '1.2.3/../../../usr/src/linux',
                                KFT.BUILD),
                    ],
                   '1.2.3')])
@@ -109,7 +109,7 @@ class StdLayoutTests(unittest.TestCase):
             boot = td / 'boot'
             modules = td / 'lib/modules'
 
-            os.symlink('../../usr/src/linux', modules / '1.2.4/build')
+            os.symlink('../../../usr/src/linux', modules / '1.2.4/build')
 
             self.assertEqual(
                 sorted(kernel_paths(
@@ -122,7 +122,7 @@ class StdLayoutTests(unittest.TestCase):
                   None),
                  ('1.2.4',
                   [ModuleDirectory(modules / '1.2.4'),
-                   GenericFile(modules / '1.2.4/../../usr/src/linux',
+                   GenericFile(modules / '1.2.4/../../../usr/src/linux',
                                KFT.BUILD)
                    ],
                   None)])

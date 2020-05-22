@@ -80,8 +80,10 @@ class StdLayout(object):
                 mobj = ModuleDirectory(path)
 
                 try:
-                    mlist.append(GenericFile(
-                        mobj.get_build_dir(), KernelFileType.BUILD))
+                    build = mobj.get_build_dir()
+                    if os.path.isdir(build):
+                        mlist.append(GenericFile(build,
+                                                 KernelFileType.BUILD))
                 except FileNotFoundError:
                     pass
 
