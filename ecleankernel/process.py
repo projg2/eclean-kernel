@@ -51,7 +51,6 @@ def remove_stray(kernels: typing.Iterable[Kernel]
                  ) -> typing.Iterable[Kernel]:
     """Remove files for non-existing kernels (without vmlinuz)"""
     for k in kernels:
-        print(k.all_files)
         if not any(isinstance(f, KernelImage) for f in k.all_files):
             yield k
 
