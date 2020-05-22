@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 from ecleankernel.__main__ import NullDebugger
-from ecleankernel.file import KernelFileType, GenericFile
+from ecleankernel.file import KernelFileType, GenericFile, KernelImage
 from ecleankernel.kernel import Kernel
 from ecleankernel.process import (
     RemovableKernelFiles,
@@ -18,6 +18,8 @@ from ecleankernel.process import (
     get_removal_list,
     remove_stray,
     )
+
+from test.test_file import write_bzImage
 
 
 class KernelRemovalTests(unittest.TestCase):
@@ -31,30 +33,35 @@ class KernelRemovalTests(unittest.TestCase):
 
         self.td = tempfile.TemporaryDirectory()
         td = Path(self.td.name)
-        with open(td / 'kernel.old', 'w') as f:
-            old_stat = os.fstat(f.fileno())
-        with open(td / 'kernel.new', 'w') as f:
-            # make sure that 'new' is newer
-            os.utime(f.fileno(), (old_stat.st_atime,
-                                  old_stat.st_mtime + 1))
+        write_bzImage(td / 'kernel.old', b'old')
+        write_bzImage(td / 'kernel.new', b'new')
+        new_stat = os.stat(td / 'kernel.new')
+        # make sure that 'new' is newer
+        os.utime(td / 'kernel.old', (new_stat.st_atime,
+                                     new_stat.st_mtime - 1))
         with open(td / 'config-stray', 'w'):
             pass
         with open(td / 'initrd-stray.img', 'w'):
             pass
         os.mkdir(td / 'build')
 
-        self.kernels[0].vmlinuz = GenericFile(
-            td / 'kernel.old', KernelFileType.KERNEL)
-        self.kernels[0].build = GenericFile(
-            td / 'build', KernelFileType.BUILD)
-        self.kernels[1].vmlinuz = GenericFile(
-            td / 'kernel.new', KernelFileType.KERNEL)
-        self.kernels[1].build = self.kernels[0].build
-        self.kernels[2].build = self.kernels[0].build
-        self.kernels[3].config = GenericFile(
-            td / 'config-stray', KernelFileType.CONFIG)
-        self.kernels[3].initramfs = GenericFile(
-            td / 'initrd-stray.img', KernelFileType.INITRAMFS)
+        build = GenericFile(td / 'build', KernelFileType.BUILD)
+        self.kernels[0].all_files = [
+            KernelImage(td / 'kernel.old'),
+            build,
+        ]
+        self.kernels[1].all_files = [
+            KernelImage(td / 'kernel.new'),
+            build,
+        ]
+        self.kernels[2].all_files = [
+            build,
+        ]
+        self.kernels[3].all_files = [
+            GenericFile(td / 'config-stray', KernelFileType.CONFIG),
+            GenericFile(td / 'initrd-stray.img',
+                        KernelFileType.INITRAMFS),
+        ]
 
     def tearDown(self) -> None:
         self.td.cleanup()

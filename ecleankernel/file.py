@@ -80,6 +80,9 @@ class KernelImage(GenericFile):
                 f'version string position ({offset + 0x200})')
         return buf.split(b' ', 1)[0].decode()
 
+    def __repr__(self) -> str:
+        return (f'KernelImage({repr(self.path)})')
+
 
 class ModuleDirectory(GenericFile):
     """A kernel module collection directory"""
@@ -91,3 +94,6 @@ class ModuleDirectory(GenericFile):
 
     def get_build_dir(self) -> Path:
         return self.path / os.readlink(self.path / 'build')
+
+    def __repr__(self) -> str:
+        return (f'ModuleDirectory({repr(self.path)})')

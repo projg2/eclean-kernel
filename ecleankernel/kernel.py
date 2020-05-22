@@ -6,7 +6,7 @@ import os
 import os.path
 import typing
 
-from ecleankernel.file import GenericFile
+from ecleankernel.file import GenericFile, KernelImage
 
 
 class WriteAccessError(Exception):
@@ -30,58 +30,33 @@ to proceed.''' % self._path
 class Kernel(object):
     """ An object representing a single kernel version. """
 
-    def __init__(self, version):
-        self._version = version
+    all_files: typing.List[GenericFile]
+    version: str
+
+    def __init__(self,
+                 version: str
+                 ) -> None:
+        self.all_files = []
+        self.version = version
 
     @property
-    def version(self):
-        return self._version
-
-    vmlinuz: typing.Optional[GenericFile] = None
-    systemmap: typing.Optional[GenericFile] = None
-    config: typing.Optional[GenericFile] = None
-    modules: typing.Optional[GenericFile] = None
-    build: typing.Optional[GenericFile] = None
-    initramfs: typing.Optional[GenericFile] = None
-
-    parts = ('vmlinuz', 'systemmap', 'config', 'initramfs',
-             'modules', 'build')
-
-    @property
-    def all_files(self) -> typing.Iterator[GenericFile]:
-        """Return a generator over all associated files (parts)"""
-        for part in self.parts:
-            f = getattr(self, part)
-            if f is not None:
-                yield f
-
-    @property
-    def real_kv(self):
+    def real_kv(self) -> typing.Optional[str]:
         """Obtain the internal KV from kernel"""
-        if self.vmlinuz is None:
-            return None
-        return self.vmlinuz.internal_version
+        for f in self.all_files:
+            if isinstance(f, KernelImage):
+                return f.internal_version
+        return None
 
     @property
-    def mtime(self):
-        # prefer vmlinuz, fallback to anything
-        # XXX: or maybe max()? min()?
-        for p in self.parts:
-            f = getattr(self, p)
-            if f is not None:
-                return os.path.getmtime(f.path)
+    def mtime(self) -> float:
+        """Get mtime for the oldest file in the set"""
+        return min(os.path.getmtime(f.path) for f in self.all_files)
 
-    def check_writable(self):
-        for f in (self.vmlinuz, self.systemmap, self.config,
-                  self.initramfs, self.modules, self.build):
-            if f is not None and not os.access(f.path, os.W_OK):
+    def check_writable(self) -> None:
+        """Check whether all files in the set are writable"""
+        for f in self.all_files:
+            if not os.access(f.path, os.W_OK):
                 raise WriteAccessError(f.path)
 
     def __repr__(self):
-        return "Kernel(%s, '%s%s%s%s%s%s')" % (repr(self.version),
-                                               'V' if self.vmlinuz else ' ',
-                                               'S' if self.systemmap else ' ',
-                                               'C' if self.config else ' ',
-                                               'I' if self.initramfs else ' ',
-                                               'M' if self.modules else ' ',
-                                               'B' if self.build else ' ')
+        return f'Kernel({repr(self.version)})'

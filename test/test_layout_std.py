@@ -22,19 +22,14 @@ TEST_DATA_DIR = Path(__file__).parent / 'data'
 
 def kernel_paths(kd: typing.List[Kernel]
                  ) -> typing.Iterable[typing.Tuple[
-                      typing.Optional[GenericFile], ...]]:
-    """Get iterable of tuples for matching a kernel dict"""
+                      str,
+                      typing.List[GenericFile],
+                      typing.Optional[str]]]:
+    """Get iterable of tuples describing kernels"""
     for k in kd:
-        yield (
-            k.version,
-            k.vmlinuz,
-            k.systemmap,
-            k.config,
-            k.modules,
-            k.build,
-            k.initramfs,
-            k.real_kv,
-        )
+        yield (k.version,
+               sorted(k.all_files, key=lambda f: f.path),
+               k.real_kv)
 
 
 def make_test_files(spec: typing.Iterable[str]
@@ -51,6 +46,8 @@ def make_test_files(spec: typing.Iterable[str]
 
 
 class StdLayoutTests(unittest.TestCase):
+    maxDiff = None
+
     def test_find_modules(self) -> None:
         test_spec = [
             'boot/vmlinuz-1.2.3',
@@ -77,20 +74,22 @@ class StdLayoutTests(unittest.TestCase):
                         boot_directory=boot,
                         module_directory=modules))),
                 [('1.2.3',
-                  GenericFile(boot / 'vmlinuz-1.2.3', KFT.KERNEL),
-                  GenericFile(boot / 'System.map-1.2.3', KFT.SYSTEM_MAP),
-                  GenericFile(boot / 'config-1.2.3', KFT.CONFIG),
-                  GenericFile(modules / '1.2.3', KFT.MODULES),
-                  GenericFile(modules / '1.2.3/build', KFT.BUILD),
-                  GenericFile(boot / 'initrd-1.2.3.img', KFT.INITRAMFS),
+                  [GenericFile(boot / 'System.map-1.2.3', KFT.SYSTEM_MAP),
+                   GenericFile(boot / 'config-1.2.3', KFT.CONFIG),
+                   GenericFile(boot / 'initrd-1.2.3.img', KFT.INITRAMFS),
+                   GenericFile(boot / 'vmlinuz-1.2.3', KFT.KERNEL),
+                   GenericFile(modules / '1.2.3', KFT.MODULES),
+                   GenericFile(modules / '1.2.3/build', KFT.BUILD),
+                   ],
                   '1.2.3'),
                  ('1.2.3.old',
-                  GenericFile(boot / 'vmlinuz-1.2.3.old', KFT.KERNEL),
-                  GenericFile(boot / 'System.map-1.2.3.old', KFT.SYSTEM_MAP),
-                  GenericFile(boot / 'config-1.2.3.old', KFT.CONFIG),
-                  GenericFile(modules / '1.2.3', KFT.MODULES),
-                  GenericFile(modules / '1.2.3/build', KFT.BUILD),
-                  GenericFile(boot / 'initrd-1.2.3.img.old', KFT.INITRAMFS),
+                  [GenericFile(boot / 'System.map-1.2.3.old', KFT.SYSTEM_MAP),
+                   GenericFile(boot / 'config-1.2.3.old', KFT.CONFIG),
+                   GenericFile(boot / 'initrd-1.2.3.img.old', KFT.INITRAMFS),
+                   GenericFile(boot / 'vmlinuz-1.2.3.old', KFT.KERNEL),
+                   GenericFile(modules / '1.2.3', KFT.MODULES),
+                   GenericFile(modules / '1.2.3/build', KFT.BUILD),
+                   ],
                   '1.2.3')])
 
     def test_modules_only(self) -> None:
@@ -110,18 +109,11 @@ class StdLayoutTests(unittest.TestCase):
                         boot_directory=boot,
                         module_directory=modules))),
                 [('1.2.3',
-                  None,
-                  None,
-                  None,
-                  GenericFile(modules / '1.2.3', KFT.MODULES),
-                  None,
-                  None,
+                  [GenericFile(modules / '1.2.3', KFT.MODULES)
+                   ],
                   None),
                  ('1.2.4',
-                  None,
-                  None,
-                  None,
-                  GenericFile(modules / '1.2.4', KFT.MODULES),
-                  GenericFile(modules / '1.2.4/build', KFT.BUILD),
-                  None,
+                  [GenericFile(modules / '1.2.4', KFT.MODULES),
+                   GenericFile(modules / '1.2.4/build', KFT.BUILD)
+                   ],
                   None)])

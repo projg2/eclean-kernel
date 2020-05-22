@@ -13,6 +13,7 @@ import sys
 import time
 
 from ecleankernel.bootloader import bootloaders, get_bootloader
+from ecleankernel.file import KernelImage
 from ecleankernel.kernel import Kernel
 from ecleankernel.layout.std import StdLayout
 from ecleankernel.process import get_removal_list, get_removable_files
@@ -249,14 +250,14 @@ def main(argv):
                         # TODO: kernel-install will remove modules
                         # when it's not meant to
                         cmd = ['kernel-install', 'remove']
-                        if k.vmlinuz is not None:
-                            cmd.extend([k.real_kv, k.vmlinuz])
-                        else:
-                            cmd.append(k.version)
-                        p = subprocess.Popen(cmd)
-                        if p.wait() != 0:
-                            print('* kernel-install exited with'
-                                  + '%d status' % p.returncode)
+                        for kf in k.all_files:
+                            if isinstance(kf, KernelImage):
+                                scmd = cmd + [kf.internal_version,
+                                              str(kf.path)]
+                                p = subprocess.Popen(scmd)
+                                if p.wait() != 0:
+                                    print('* kernel-install exited with'
+                                          + '%d status' % p.returncode)
 
                     for f in k.all_files:
                         if f.path in files:

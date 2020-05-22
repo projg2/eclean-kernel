@@ -71,24 +71,23 @@ class StdLayout(object):
 
                 prev_paths.add(m)
                 newk = kernels.setdefault(kv, Kernel(kv))
-                try:
-                    setattr(newk, cat.value, file_obj)
-                except KeyError:
-                    raise SystemError('Colliding %s files: %s and %s'
-                                      % (cat.value,
-                                         m,
-                                         getattr(newk, cat.value)))
+                newk.all_files.append(file_obj)
+                # XXX: cheap hack
+                setattr(newk, cat.value, file_obj)
 
                 if cat == KernelFileType.MODULES:
                     builddir = os.path.join(m, 'build')
                     if os.path.isdir(builddir):
+                        # XXX: cheap hack
                         newk.build = GenericFile(Path(builddir),
                                                  KernelFileType.BUILD)
+                        newk.all_files.append(newk.build)
 
                     if '%s.old' % kv in kernels:
-                        kernels['%s.old' % kv].modules = newk.modules
+                        oldk = kernels['%s.old' % kv]
+                        oldk.all_files.append(newk.modules)
                         if newk.build:
-                            kernels['%s.old' % kv].build = newk.build
+                            oldk.all_files.append(newk.build)
                 elif cat == KernelFileType.KERNEL:
                     assert isinstance(file_obj, KernelImage)
                     realkv = file_obj.internal_version
@@ -96,13 +95,17 @@ class StdLayout(object):
                     builddir = os.path.join(moduledir, 'build')
                     if ('modules' not in exclusions
                             and os.path.isdir(moduledir)):
+                        # XXX
                         newk.modules = GenericFile(Path(moduledir),
                                                    KernelFileType.MODULES)
+                        newk.all_files.append(newk.modules)
                         prev_paths.add(moduledir)
                     if ('build' not in exclusions
                             and os.path.isdir(builddir)):
+                        # XXX
                         newk.build = GenericFile(Path(builddir),
                                                  KernelFileType.BUILD)
+                        newk.all_files.append(newk.build)
                         prev_paths.add(builddir)
 
         # fill .old files
@@ -111,8 +114,8 @@ class StdLayout(object):
                 oldk = kernels['%s.old' % k.version]
                 # it seems that these are renamed .old sometimes
                 if not oldk.systemmap and k.systemmap:
-                    oldk.systemmap = k.systemmap
+                    oldk.all_files.append(k.systemmap)
                 if not oldk.config and k.config:
-                    oldk.config = k.config
+                    oldk.all_files.append(k.config)
 
         return list(kernels.values())
