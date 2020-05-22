@@ -8,7 +8,7 @@ import typing
 from glob import glob
 from pathlib import Path
 
-from ecleankernel.kernel import Kernel, PathDict
+from ecleankernel.kernel import Kernel
 
 
 class StdLayout(object):
@@ -45,8 +45,7 @@ class StdLayout(object):
             ('modules', f'{module_directory}/'),
         ]
 
-        # paths can repeat, so keep them sorted
-        paths = PathDict()
+        prev_paths: typing.Set[str] = set()
 
         kernels: typing.Dict[str, Kernel] = {}
         for cat, g in globs:
@@ -58,36 +57,39 @@ class StdLayout(object):
                     kv = kv[:-4]
                 elif cat == 'initramfs' and kv.endswith('.img.old'):
                     kv = kv[:-8] + '.old'
-                elif cat == 'modules' and m in paths:
+                elif cat == 'modules' and any(os.path.samefile(x, m)
+                                              for x in prev_paths):
                     continue
 
-                path = paths[m]
+                prev_paths.add(m)
                 newk = kernels.setdefault(kv, Kernel(kv))
                 try:
-                    setattr(newk, cat, path)
+                    setattr(newk, cat, m)
                 except KeyError:
                     raise SystemError('Colliding %s files: %s and %s'
                                       % (cat, m, getattr(newk, cat)))
 
                 if cat == 'modules':
-                    builddir = paths[os.path.join(path, 'build')]
+                    builddir = os.path.join(m, 'build')
                     if os.path.isdir(builddir):
                         newk.build = builddir
 
                     if '%s.old' % kv in kernels:
-                        kernels['%s.old' % kv].modules = path
+                        kernels['%s.old' % kv].modules = m
                         if newk.build:
                             kernels['%s.old' % kv].build = builddir
                 if cat == 'vmlinuz':
                     realkv = newk.real_kv
                     moduledir = os.path.join('/lib/modules', realkv)
-                    builddir = paths[os.path.join(moduledir, 'build')]
+                    builddir = os.path.join(moduledir, 'build')
                     if ('modules' not in exclusions
                             and os.path.isdir(moduledir)):
-                        newk.modules = paths[moduledir]
+                        newk.modules = moduledir
+                        prev_paths.add(moduledir)
                     if ('build' not in exclusions
                             and os.path.isdir(builddir)):
-                        newk.build = paths[builddir]
+                        newk.build = builddir
+                        prev_paths.add(builddir)
 
         # fill .old files
         for k in kernels.values():

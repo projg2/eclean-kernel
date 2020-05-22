@@ -4,42 +4,8 @@
 
 import os
 import os.path
-import shutil
 import struct
-
-from collections import defaultdict
-from functools import partial
-
-
-class ReadAccessError(Exception):
-    def __init__(self, path):
-        self._path = path
-        Exception.__init__(self, '%s not readable, unable to proceed.' % path)
-
-    @property
-    def friendly_desc(self):
-        if os.path.islink(self._path) and not os.access(self._path, os.F_OK):
-            return '''The following file is a dangling symbolic link:
-  %s
-
-This may be just an orphan link but it can also indicate that
-the filesystem containing the link target is not mounted. Since
-the program needs to be able to read all kernel-related files in order
-to properly associate them, the non-existence of the symlink target
-may result in wrong kernels being removed. The program will refuse
-to proceed.
-
-Please check the symbolic link and either fix the underlying issue,
-or remove it manually.''' % self._path
-
-        return '''The following file is not readable:
-  %s
-
-This usually indicates that you have insufficient permissions to run
-eclean-kernel. The program needs to be able to read all kernel-related
-files in order to properly associate them. Lack of access to some
-of the files may result in wrong kernels being removed and therefore
-the program will refuse to proceed.''' % self._path
+import typing
 
 
 class WriteAccessError(Exception):
@@ -60,49 +26,6 @@ will result in orphan files and therefore the program will refuse
 to proceed.''' % self._path
 
 
-class PathRef(str):
-    def __init__(self, path):
-        str.__init__(self)
-        self._refs = 0
-
-    def ref(self):
-        if self._refs == 0:
-            if not os.access(self, os.R_OK):
-                raise ReadAccessError(self)
-        self._refs += 1
-
-    def unref(self):
-        self._refs -= 1
-        if not self._refs:
-            print('- %s' % self)
-            if os.path.isdir(self):
-                shutil.rmtree(self)
-            else:
-                os.unlink(self)
-
-
-def OnceProperty(f):
-    def _get(propname, self):
-        try:
-            return getattr(self, propname)
-        except AttributeError:
-            return None
-
-    def _set(propname, self, val):
-        if hasattr(self, propname):
-            raise KeyError('Value for %s already set' % propname)
-        val.ref()
-        return setattr(self, propname, val)
-
-    def _del(propname, self):
-        if hasattr(self, propname):
-            getattr(self, propname).unref()
-
-    attrname = '_%s' % f.__name__
-    funcs = [partial(x, attrname) for x in (_get, _set, _del)]
-    return property(*funcs)
-
-
 class Kernel(object):
     """ An object representing a single kernel version. """
 
@@ -113,32 +36,23 @@ class Kernel(object):
     def version(self):
         return self._version
 
-    @OnceProperty
-    def vmlinuz(self):
-        pass
-
-    @OnceProperty
-    def systemmap(self):
-        pass
-
-    @OnceProperty
-    def config(self):
-        pass
-
-    @OnceProperty
-    def modules(self):
-        pass
-
-    @OnceProperty
-    def build(self):
-        pass
-
-    @OnceProperty
-    def initramfs(self):
-        pass
+    vmlinuz: typing.Optional[str] = None
+    systemmap: typing.Optional[str] = None
+    config: typing.Optional[str] = None
+    modules: typing.Optional[str] = None
+    build: typing.Optional[str] = None
+    initramfs: typing.Optional[str] = None
 
     parts = ('vmlinuz', 'systemmap', 'config', 'initramfs',
              'modules', 'build')
+
+    @property
+    def all_files(self) -> typing.Iterator[str]:
+        """Return a generator over all associated files (parts)"""
+        for part in self.parts:
+            path = getattr(self, part)
+            if path is not None:
+                yield path
 
     @property
     def real_kv(self):
@@ -167,14 +81,6 @@ class Kernel(object):
             if path is not None:
                 return os.path.getmtime(path)
 
-    def unrefall(self):
-        del self.vmlinuz
-        del self.systemmap
-        del self.config
-        del self.initramfs
-        del self.modules
-        del self.build
-
     def check_writable(self):
         for path in (self.vmlinuz, self.systemmap, self.config,
                      self.initramfs, self.modules, self.build):
@@ -189,16 +95,3 @@ class Kernel(object):
                                                'I' if self.initramfs else ' ',
                                                'M' if self.modules else ' ',
                                                'B' if self.build else ' ')
-
-
-class PathDict(defaultdict):
-    def __contains__(self, path):
-        path = os.path.realpath(path)
-        return defaultdict.__contains__(self, path)
-
-    def __missing__(self, path):
-        path = os.path.realpath(path)
-
-        if not defaultdict.__contains__(self, path):
-            self[path] = PathRef(path)
-        return self[path]

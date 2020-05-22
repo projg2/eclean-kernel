@@ -17,7 +17,8 @@ TEST_DATA_DIR = Path(__file__).parent / 'data'
 
 
 def kernel_paths(kd: typing.List[Kernel]
-                 ) -> typing.Iterable[typing.Tuple[str, ...]]:
+                 ) -> typing.Iterable[typing.Tuple[
+                      typing.Optional[str], ...]]:
     """Get iterable of tuples for matching a kernel dict"""
     for k in kd:
         yield (

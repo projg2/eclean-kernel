@@ -7,6 +7,7 @@ import os
 import os.path
 import errno
 import shlex
+import shutil
 import subprocess
 import sys
 import time
@@ -14,7 +15,7 @@ import time
 from ecleankernel.bootloader import bootloaders, get_bootloader
 from ecleankernel.kernel import Kernel
 from ecleankernel.layout.std import StdLayout
-from ecleankernel.process import get_removal_list
+from ecleankernel.process import get_removal_list, get_removable_files
 
 ecleankern_desc = '''
 Remove old kernel versions, keeping either N newest kernels (with -n)
@@ -173,11 +174,12 @@ def main(argv):
 
             bootloader = get_bootloader(requested=args.bootloader,
                                         debug=debug)
-            removals = get_removal_list(kernels,
-                                        limit=None if args.all else args.num,
-                                        bootloader=bootloader,
-                                        destructive=args.destructive,
-                                        debug=debug)
+            removals = get_removal_list(
+                kernels,
+                limit=None if args.all else args.num,
+                bootloader=bootloader,
+                destructive=args.destructive,
+                debug=debug)
 
             has_kernel_install = False
             try:
@@ -195,23 +197,31 @@ def main(argv):
             elif args.pretend:
                 print('These are the kernels which would be removed:')
 
-                for k, reason in removals:
+                file_removals = list(
+                    get_removable_files(removals, kernels))
+
+                for k, reason, files in file_removals:
                     print('- %s: %s' % (k.version, ', '.join(reason)))
+                    for f in k.all_files:
+                        if f in files:
+                            sign = '-'
+                        else:
+                            sign = '+'
+                        print(f' [{sign}] {f}')
                 if has_kernel_install:
                     print('kernel-install will be called to perform'
                           + ' prerm tasks.')
-                if removals and hasattr(bootloader, 'postrm'):
+                if hasattr(bootloader, 'postrm'):
                     print('Bootloader %s config will be updated.' %
                           bootloader.name)
             else:
                 bootfs.rwmount()
-                for k, reason in removals:
+                for k in removals:
                     k.check_writable()
 
                 nremoved = 0
 
-                for k, reason in removals:
-                    remove = True
+                for k, reason in list(removals.items()):
                     while args.ask:
                         try:
                             input_f = raw_input
@@ -223,28 +233,43 @@ def main(argv):
                         if 'yes'.startswith(ans):
                             break
                         elif 'no'.startswith(ans):
-                            remove = False
+                            del removals[k]
                             break
                         else:
                             print('Invalid answer (%s).' % ans)
 
-                    if remove:
-                        print('* Removing kernel %s (%s)' %
-                              (k.version, ', '.join(reason)))
+                file_removals = list(
+                    get_removable_files(removals, kernels))
 
-                        if has_kernel_install:
-                            cmd = ['kernel-install', 'remove']
-                            if k.vmlinuz is not None:
-                                cmd.extend([k.real_kv, k.vmlinuz])
+                for k, reason, files in file_removals:
+                    print('* Removing kernel %s (%s)' %
+                          (k.version, ', '.join(reason)))
+
+                    if has_kernel_install:
+                        # TODO: kernel-install will remove modules
+                        # when it's not meant to
+                        cmd = ['kernel-install', 'remove']
+                        if k.vmlinuz is not None:
+                            cmd.extend([k.real_kv, k.vmlinuz])
+                        else:
+                            cmd.append(k.version)
+                        p = subprocess.Popen(cmd)
+                        if p.wait() != 0:
+                            print('* kernel-install exited with'
+                                  + '%d status' % p.returncode)
+
+                    for f in k.all_files:
+                        if f in files:
+                            sign = '-'
+                        else:
+                            sign = '+'
+                        print(f' [{sign}] {f}')
+                        if f in files:
+                            if os.path.isdir(f):
+                                shutil.rmtree(f)
                             else:
-                                cmd.append(k.version)
-                            p = subprocess.Popen(cmd)
-                            if p.wait() != 0:
-                                print('* kernel-install exited with'
-                                      + '%d status' % p.returncode)
-
-                        k.unrefall()
-                        nremoved += 1
+                                os.unlink(f)
+                    nremoved += 1
 
                 if nremoved:
                     print('Removed %d kernels' % nremoved)
