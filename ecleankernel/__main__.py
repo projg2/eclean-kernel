@@ -119,7 +119,7 @@ def main(argv):
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     else:
-        logging.getLogger().setLevel(logging.NOTICE)
+        logging.getLogger().setLevel(logging.INFO)
 
     bootfs = DummyMount()
     try:
