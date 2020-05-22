@@ -3,6 +3,7 @@
 # Released under the terms of the 2-clause BSD license.
 
 import enum
+import os
 import struct
 
 from pathlib import Path
@@ -78,3 +79,15 @@ class KernelImage(GenericFile):
                 f'Kernel file {self.path} terminates before expected '
                 f'version string position ({offset + 0x200})')
         return buf.split(b' ', 1)[0].decode()
+
+
+class ModuleDirectory(GenericFile):
+    """A kernel module collection directory"""
+
+    def __init__(self,
+                 path: Path
+                 ) -> None:
+        super().__init__(path, KernelFileType.MODULES)
+
+    def get_build_dir(self) -> Path:
+        return self.path / os.readlink(self.path / 'build')
