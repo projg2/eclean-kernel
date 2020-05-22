@@ -53,6 +53,7 @@ as root, or preferably mount /boot before using it.'''
 
 def main(argv):
     kernel_parts = [x.value for x in KernelFileType.__members__.values()]
+    layouts = [StdLayout]
 
     argp = argparse.ArgumentParser(description=ecleankern_desc.strip())
     argp.add_argument('-a', '--all',
@@ -75,6 +76,10 @@ def main(argv):
     argp.add_argument('-l', '--list-kernels',
                       action='store_true',
                       help='List kernel files and exit')
+    argp.add_argument('-L', '--layout',
+                      default='auto',
+                      help=f'Layout used (auto, '
+                           f'{", ".join(l.name for l in layouts)}')
     argp.add_argument('-M', '--no-mount',
                       action='store_false',
                       help='Disable (re-)mounting /boot if necessary')
@@ -121,6 +126,15 @@ def main(argv):
     else:
         logging.getLogger().setLevel(logging.INFO)
 
+    for layout_cls in layouts:
+        if args.layout == 'auto' and layout_cls.is_acceptable():
+            break
+        elif args.layout == layout_cls.name:
+            break
+    else:
+        argp.error(f'Invalid layout: {args.layout}')
+    layout = layout_cls()
+
     bootfs = DummyMount()
     try:
         import pymountboot
@@ -137,7 +151,6 @@ def main(argv):
             raise MountError()
 
         try:
-            layout = StdLayout()
             kernels = layout.find_kernels(exclusions=exclusions)
 
             if args.list_kernels:

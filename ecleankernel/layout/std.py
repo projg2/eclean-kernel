@@ -27,6 +27,8 @@ class StdLayout(object):
     directly in /boot directory.
     """
 
+    name = 'std'
+
     prefixes = [
         (KernelFileType.KERNEL, 'vmlinuz-'),
         (KernelFileType.KERNEL, '/vmlinux-'),
@@ -48,6 +50,11 @@ class StdLayout(object):
         '.lz',
         '.xz',
     ]
+
+    @staticmethod
+    def is_acceptable() -> bool:
+        """Return true (this layout is fallback)"""
+        return True
 
     def find_kernels(self,
                      exclusions: typing.List[str] = [],
