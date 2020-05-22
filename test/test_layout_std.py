@@ -14,6 +14,8 @@ from ecleankernel.file import GenericFile
 from ecleankernel.kernel import Kernel
 from ecleankernel.layout.std import StdLayout
 
+from test.test_file import write_bzImage
+
 
 TEST_DATA_DIR = Path(__file__).parent / 'data'
 
@@ -46,18 +48,6 @@ def make_test_files(spec: typing.Iterable[str]
         with open(fnpath, 'w'):
             pass
     return tempdir
-
-
-def write_bzImage(path: Path,
-                  version_line: bytes
-                  ) -> None:
-    """Write a pseudo-bzImage file at `path`, with `version_line`"""
-    with open(path, 'wb') as f:
-        f.write(0x202 * b'\0')
-        f.write(b'HdrS')
-        f.write(8 * b'\0')
-        f.write(b'\x10\x00')
-        f.write(version_line)
 
 
 class StdLayoutTests(unittest.TestCase):

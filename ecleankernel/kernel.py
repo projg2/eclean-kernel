@@ -4,7 +4,6 @@
 
 import os
 import os.path
-import struct
 import typing
 
 from pathlib import Path
@@ -60,21 +59,10 @@ class Kernel(object):
 
     @property
     def real_kv(self):
-        """ Obtain the KV from the kernel, as used by it. """
-        vmlinuz = self.vmlinuz
-        if vmlinuz is None:
+        """Obtain the internal KV from kernel"""
+        if self.vmlinuz is None:
             return None
-
-        f = open(vmlinuz.path, 'rb')
-        f.seek(0x200)
-        buf = f.read(0x10)
-        if buf[2:6] != b'HdrS':
-            raise NotImplementedError('Invalid magic for kernel file'
-                                      + ' %s (!= HdrS)' % vmlinuz)
-        offset = struct.unpack_from('H', buf, 0x0e)[0]
-        f.seek(offset - 0x10, 1)
-        buf = f.read(0x100)  # XXX
-        return buf.split(b' ', 1)[0].decode()
+        return self.vmlinuz.internal_version
 
     @property
     def mtime(self):

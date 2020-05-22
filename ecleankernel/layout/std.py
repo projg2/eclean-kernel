@@ -8,7 +8,7 @@ import typing
 from glob import glob
 from pathlib import Path
 
-from ecleankernel.file import KernelFileType, GenericFile
+from ecleankernel.file import KernelFileType, GenericFile, KernelImage
 from ecleankernel.kernel import Kernel
 
 
@@ -63,10 +63,16 @@ class StdLayout(object):
                     if any(os.path.samefile(x, m) for x in prev_paths):
                         continue
 
+                file_obj: GenericFile
+                if cat == KernelFileType.KERNEL:
+                    file_obj = KernelImage(Path(m))
+                else:
+                    file_obj = GenericFile(Path(m), cat)
+
                 prev_paths.add(m)
                 newk = kernels.setdefault(kv, Kernel(kv))
                 try:
-                    setattr(newk, cat.value, GenericFile(Path(m), cat))
+                    setattr(newk, cat.value, file_obj)
                 except KeyError:
                     raise SystemError('Colliding %s files: %s and %s'
                                       % (cat.value,
@@ -83,8 +89,9 @@ class StdLayout(object):
                         kernels['%s.old' % kv].modules = newk.modules
                         if newk.build:
                             kernels['%s.old' % kv].build = newk.build
-                if cat == KernelFileType.KERNEL:
-                    realkv = newk.real_kv
+                elif cat == KernelFileType.KERNEL:
+                    assert isinstance(file_obj, KernelImage)
+                    realkv = file_obj.internal_version
                     moduledir = os.path.join('/lib/modules', realkv)
                     builddir = os.path.join(moduledir, 'build')
                     if ('modules' not in exclusions
