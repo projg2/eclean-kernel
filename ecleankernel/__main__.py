@@ -13,8 +13,7 @@ import sys
 import time
 
 from ecleankernel.bootloader import bootloaders, get_bootloader
-from ecleankernel.file import KernelImage
-from ecleankernel.kernel import Kernel
+from ecleankernel.file import KernelImage, KernelFileType
 from ecleankernel.layout.std import StdLayout
 from ecleankernel.process import get_removal_list, get_removable_files
 
@@ -76,6 +75,8 @@ class ConsoleDebugger(NullDebugger):
 
 
 def main(argv):
+    kernel_parts = [x.value for x in KernelFileType.__members__.values()]
+
     argp = argparse.ArgumentParser(description=ecleankern_desc.strip())
     argp.add_argument('-a', '--all',
                       action='store_true',
@@ -112,7 +113,7 @@ def main(argv):
                       default='',
                       help='Exclude kernel parts from being removed '
                            '(comma-separated, supported parts: %s)'
-                           % ', '.join(Kernel.parts))
+                           % ', '.join(kernel_parts))
 
     all_args = []
     config_dirs = os.environ.get('XDG_CONFIG_DIRS', '/etc/xdg').split(':')
@@ -133,7 +134,7 @@ def main(argv):
     for x in exclusions:
         if not x:
             pass
-        elif x not in Kernel.parts:
+        elif x not in kernel_parts:
             argp.error('Invalid kernel part: %s' % x)
         elif x == 'vmlinuz':
             argp.error('Kernel exclusion unsupported')
@@ -164,13 +165,12 @@ def main(argv):
                                  key=lambda k: k.mtime,
                                  reverse=True)
                 for k in ordered:
-                    print('%s [%s]:' % (k.version, k.real_kv))
-                    for key in k.parts:
-                        val = getattr(k, key)
-                        if val is not None:
-                            print('- %s: %s' % (key, val))
-                    print('- last modified: %s' % time.strftime(
-                        '%Y-%m-%d %H:%M:%S', time.gmtime(k.mtime)))
+                    print(f'{k.version} [{k.real_kv}]')
+                    for f in k.all_files:
+                        print(f'- {f.ftype.value}: {f.path}')
+                    ts = time.strftime("%Y-%m-%d %H:%M:%S",
+                                       time.gmtime(k.mtime))
+                    print(f'- last modified: {ts}')
                 return 0
 
             bootloader = get_bootloader(requested=args.bootloader,
