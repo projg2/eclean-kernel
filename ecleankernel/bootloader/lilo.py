@@ -2,11 +2,12 @@
 # (c) 2011-2020 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
-from ecleankernel.bootloader.common import BootloaderNotFound
-
 import errno
+import logging
 import re
 import typing
+
+from ecleankernel.bootloader.common import BootloaderNotFound
 
 
 class LILO(object):
@@ -14,8 +15,7 @@ class LILO(object):
     kernel_re = r'^\s*image\s*=\s*(?P<path>.+)\s*$'
     def_path: typing.Tuple[str, ...] = ('/etc/lilo.conf',)
 
-    def __init__(self, debug=False, path=None):
-        self._debug = debug
+    def __init__(self, path=None):
         self._kernel_re = re.compile(self.kernel_re,
                                      re.MULTILINE | re.IGNORECASE)
         paths = path or self.def_path
@@ -25,7 +25,7 @@ class LILO(object):
         for p in paths:
             try:
                 with open(p) as f:
-                    debug.print('%s found' % p)
+                    logging.debug(f'{p} found')
                     self.path = p
                     self._content = f.read()
                     break
@@ -36,19 +36,12 @@ class LILO(object):
             raise BootloaderNotFound()
 
     def _get_kernels(self, content):
-        debug = self._debug
-
-        debug.indent(heading='matching...')
-        try:
-            for m in self._kernel_re.finditer(content):
-                path = m.group('path')
-                debug.printf('regexp matched path %s', path)
-                debug.indent()
-                debug.printf('from line: %s', m.group(0))
-                debug.outdent()
-                yield path
-        finally:
-            debug.outdent()
+        logging.debug('matching...')
+        for m in self._kernel_re.finditer(content):
+            path = m.group('path')
+            logging.debug(f'  regexp matched path {path}')
+            logging.debug(f'    from line: {m.group(0)}')
+            yield path
 
     def __call__(self):
         return self._get_kernels(self._content)

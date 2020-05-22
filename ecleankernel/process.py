@@ -3,6 +3,7 @@
 # Released under the terms of the 2-clause BSD license.
 
 import itertools
+import logging
 import os
 import os.path
 import re
@@ -56,7 +57,6 @@ def remove_stray(kernels: typing.Iterable[Kernel]
 
 
 def get_removal_list(kernels: typing.List[Kernel],
-                     debug: typing.Any,
                      limit: int = 0,
                      bootloader: typing.Optional[typing.Any] = None,
                      destructive: bool = False
@@ -71,7 +71,7 @@ def get_removal_list(kernels: typing.List[Kernel],
     indicates whether bootloader references should be ignored.
     """
 
-    debug.indent(heading='In get_removal_list()')
+    logging.debug('in get_removal_list()')
 
     remove_kernels: typing.Dict[Kernel, typing.List[str]] = {}
     for k in remove_stray(kernels):
@@ -129,5 +129,4 @@ def get_removal_list(kernels: typing.List[Kernel],
             print('Preserving currently running kernel (%s)' % current)
             del remove_kernels[k]
 
-    debug.outdent()
     return remove_kernels

@@ -3,6 +3,7 @@
 # Released under the terms of the 2-clause BSD license.
 
 import argparse
+import logging
 import os
 import os.path
 import errno
@@ -16,6 +17,7 @@ from ecleankernel.bootloader import bootloaders, get_bootloader
 from ecleankernel.file import KernelImage, KernelFileType
 from ecleankernel.layout.std import StdLayout
 from ecleankernel.process import get_removal_list, get_removable_files
+
 
 ecleankern_desc = '''
 Remove old kernel versions, keeping either N newest kernels (with -n)
@@ -47,31 +49,6 @@ eclean-kernel, or your fstab is incorrect. Improperly mounted file-
 systems can result in wrong files being removed, and therefore
 eclean-kernel will refuse to proceed. Please either run the program
 as root, or preferably mount /boot before using it.'''
-
-
-class NullDebugger(object):
-    def __init__(self):
-        self._indent = 1
-
-    def print(self, msg):
-        pass
-
-    def printf(self, fstr, *args):
-        self.print(fstr % args)
-
-    def indent(self, n=1, heading=None):
-        if heading is not None:
-            self.print(heading)
-        self._indent += n
-
-    def outdent(self, n=1):
-        self._indent -= n
-
-
-class ConsoleDebugger(NullDebugger):
-    def print(self, msg):
-        ind = '*' * self._indent
-        print('%s %s' % (ind, msg))
 
 
 def main(argv):
@@ -139,13 +116,16 @@ def main(argv):
         elif x == 'vmlinuz':
             argp.error('Kernel exclusion unsupported')
 
-    debug = ConsoleDebugger() if args.debug else NullDebugger()
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+    else:
+        logging.getLogger().setLevel(logging.NOTICE)
 
     bootfs = DummyMount()
     try:
         import pymountboot
     except ImportError:
-        debug.print('unable to import pymountboot, /boot mounting disabled.')
+        logging.debug('unable to import pymountboot, /boot mounting disabled.')
     else:
         if args.mount:
             bootfs = pymountboot.BootMountpoint()
@@ -173,14 +153,12 @@ def main(argv):
                     print(f'- last modified: {ts}')
                 return 0
 
-            bootloader = get_bootloader(requested=args.bootloader,
-                                        debug=debug)
+            bootloader = get_bootloader(requested=args.bootloader)
             removals = get_removal_list(
                 kernels,
                 limit=None if args.all else args.num,
                 bootloader=bootloader,
-                destructive=args.destructive,
-                debug=debug)
+                destructive=args.destructive)
 
             has_kernel_install = False
             try:

@@ -9,7 +9,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from ecleankernel.__main__ import NullDebugger
 from ecleankernel.file import KernelFileType, GenericFile, KernelImage
 from ecleankernel.kernel import Kernel
 from ecleankernel.process import (
@@ -95,7 +94,6 @@ class KernelRemovalTests(unittest.TestCase):
     def test_removal_no_limit(self) -> None:
         self.assertEqual(
             get_removal_list(self.kernels,
-                             debug=NullDebugger(),
                              limit=0),
             {self.kernels[2]: ['vmlinuz does not exist'],
              self.kernels[3]: ['vmlinuz does not exist'],
@@ -104,7 +102,6 @@ class KernelRemovalTests(unittest.TestCase):
     def test_removal_destructive(self) -> None:
         self.assertEqual(
             get_removal_list(self.kernels,
-                             debug=NullDebugger(),
                              limit=1,
                              destructive=True),
             {self.kernels[2]: ['vmlinuz does not exist', 'unwanted'],
@@ -115,7 +112,6 @@ class KernelRemovalTests(unittest.TestCase):
     def test_removal_no_bootloader(self) -> None:
         with self.assertRaises(SystemError):
             get_removal_list(self.kernels,
-                             debug=NullDebugger(),
                              limit=1,
                              destructive=False)
 
@@ -132,7 +128,6 @@ class KernelRemovalTests(unittest.TestCase):
 
         self.assertEqual(
             get_removal_list(self.kernels,
-                             debug=NullDebugger(),
                              limit=1,
                              destructive=False,
                              bootloader=MockBootloader()),
@@ -150,7 +145,6 @@ class KernelRemovalTests(unittest.TestCase):
             'Linux', 'localhost', 'old', '', 'x86_64')
         self.assertEqual(
             get_removal_list(self.kernels,
-                             debug=NullDebugger(),
                              limit=1,
                              destructive=True),
             {self.kernels[2]: ['vmlinuz does not exist', 'unwanted'],
@@ -165,7 +159,6 @@ class KernelRemovalTests(unittest.TestCase):
             'Linux', 'localhost', 'stray', '', 'x86_64')
         self.assertEqual(
             get_removal_list(self.kernels,
-                             debug=NullDebugger(),
                              limit=1,
                              destructive=True),
             {self.kernels[3]: ['vmlinuz does not exist', 'unwanted'],
