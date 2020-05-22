@@ -7,6 +7,10 @@ import os.path
 import struct
 import typing
 
+from pathlib import Path
+
+from ecleankernel.file import GenericFile
+
 
 class WriteAccessError(Exception):
     def __init__(self, path):
@@ -36,23 +40,23 @@ class Kernel(object):
     def version(self):
         return self._version
 
-    vmlinuz: typing.Optional[str] = None
-    systemmap: typing.Optional[str] = None
-    config: typing.Optional[str] = None
-    modules: typing.Optional[str] = None
-    build: typing.Optional[str] = None
-    initramfs: typing.Optional[str] = None
+    vmlinuz: typing.Optional[GenericFile] = None
+    systemmap: typing.Optional[GenericFile] = None
+    config: typing.Optional[GenericFile] = None
+    modules: typing.Optional[GenericFile] = None
+    build: typing.Optional[GenericFile] = None
+    initramfs: typing.Optional[GenericFile] = None
 
     parts = ('vmlinuz', 'systemmap', 'config', 'initramfs',
              'modules', 'build')
 
     @property
-    def all_files(self) -> typing.Iterator[str]:
+    def all_files(self) -> typing.Iterator[Path]:
         """Return a generator over all associated files (parts)"""
         for part in self.parts:
-            path = getattr(self, part)
-            if path is not None:
-                yield path
+            f = getattr(self, part)
+            if f is not None:
+                yield f.path
 
     @property
     def real_kv(self):
@@ -61,7 +65,7 @@ class Kernel(object):
         if vmlinuz is None:
             return None
 
-        f = open(vmlinuz, 'rb')
+        f = open(vmlinuz.path, 'rb')
         f.seek(0x200)
         buf = f.read(0x10)
         if buf[2:6] != b'HdrS':
@@ -77,15 +81,15 @@ class Kernel(object):
         # prefer vmlinuz, fallback to anything
         # XXX: or maybe max()? min()?
         for p in self.parts:
-            path = getattr(self, p)
-            if path is not None:
-                return os.path.getmtime(path)
+            f = getattr(self, p)
+            if f is not None:
+                return os.path.getmtime(f.path)
 
     def check_writable(self):
-        for path in (self.vmlinuz, self.systemmap, self.config,
-                     self.initramfs, self.modules, self.build):
-            if path and not os.access(path, os.W_OK):
-                raise WriteAccessError(path)
+        for f in (self.vmlinuz, self.systemmap, self.config,
+                  self.initramfs, self.modules, self.build):
+            if f is not None and not os.access(f.path, os.W_OK):
+                raise WriteAccessError(f.path)
 
     def __repr__(self):
         return "Kernel(%s, '%s%s%s%s%s%s')" % (repr(self.version),

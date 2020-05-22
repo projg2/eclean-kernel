@@ -8,6 +8,7 @@ import typing
 from glob import glob
 from pathlib import Path
 
+from ecleankernel.file import KernelFileType, GenericFile
 from ecleankernel.kernel import Kernel
 
 
@@ -34,61 +35,67 @@ class StdLayout(object):
         """
 
         globs = [
-            ('vmlinuz', f'{boot_directory}/vmlinuz-'),
-            ('vmlinuz', f'{boot_directory}/vmlinux-'),
-            ('vmlinuz', f'{boot_directory}/kernel-'),
-            ('vmlinuz', f'{boot_directory}/bzImage-'),
-            ('systemmap', f'{boot_directory}/System.map-'),
-            ('config', f'{boot_directory}/config-'),
-            ('initramfs', f'{boot_directory}/initramfs-'),
-            ('initramfs', f'{boot_directory}/initrd-'),
-            ('modules', f'{module_directory}/'),
+            (KernelFileType.KERNEL, f'{boot_directory}/vmlinuz-'),
+            (KernelFileType.KERNEL, f'{boot_directory}/vmlinux-'),
+            (KernelFileType.KERNEL, f'{boot_directory}/kernel-'),
+            (KernelFileType.KERNEL, f'{boot_directory}/bzImage-'),
+            (KernelFileType.SYSTEM_MAP, f'{boot_directory}/System.map-'),
+            (KernelFileType.CONFIG, f'{boot_directory}/config-'),
+            (KernelFileType.INITRAMFS, f'{boot_directory}/initramfs-'),
+            (KernelFileType.INITRAMFS, f'{boot_directory}/initrd-'),
+            (KernelFileType.MODULES, f'{module_directory}/'),
         ]
 
         prev_paths: typing.Set[str] = set()
 
         kernels: typing.Dict[str, Kernel] = {}
         for cat, g in globs:
-            if cat in exclusions:
+            if cat.value in exclusions:
                 continue
             for m in glob('%s*' % g):
                 kv = m[len(g):]
-                if cat == 'initramfs' and kv.endswith('.img'):
-                    kv = kv[:-4]
-                elif cat == 'initramfs' and kv.endswith('.img.old'):
-                    kv = kv[:-8] + '.old'
-                elif cat == 'modules' and any(os.path.samefile(x, m)
-                                              for x in prev_paths):
-                    continue
+                if cat == KernelFileType.INITRAMFS:
+                    if kv.endswith('.img'):
+                        kv = kv[:-4]
+                    elif kv.endswith('.img.old'):
+                        kv = kv[:-8] + '.old'
+                elif cat == KernelFileType.MODULES:
+                    if any(os.path.samefile(x, m) for x in prev_paths):
+                        continue
 
                 prev_paths.add(m)
                 newk = kernels.setdefault(kv, Kernel(kv))
                 try:
-                    setattr(newk, cat, m)
+                    setattr(newk, cat.value, GenericFile(Path(m), cat))
                 except KeyError:
                     raise SystemError('Colliding %s files: %s and %s'
-                                      % (cat, m, getattr(newk, cat)))
+                                      % (cat.value,
+                                         m,
+                                         getattr(newk, cat.value)))
 
-                if cat == 'modules':
+                if cat == KernelFileType.MODULES:
                     builddir = os.path.join(m, 'build')
                     if os.path.isdir(builddir):
-                        newk.build = builddir
+                        newk.build = GenericFile(Path(builddir),
+                                                 KernelFileType.BUILD)
 
                     if '%s.old' % kv in kernels:
-                        kernels['%s.old' % kv].modules = m
+                        kernels['%s.old' % kv].modules = newk.modules
                         if newk.build:
-                            kernels['%s.old' % kv].build = builddir
-                if cat == 'vmlinuz':
+                            kernels['%s.old' % kv].build = newk.build
+                if cat == KernelFileType.KERNEL:
                     realkv = newk.real_kv
                     moduledir = os.path.join('/lib/modules', realkv)
                     builddir = os.path.join(moduledir, 'build')
                     if ('modules' not in exclusions
                             and os.path.isdir(moduledir)):
-                        newk.modules = moduledir
+                        newk.modules = GenericFile(Path(moduledir),
+                                                   KernelFileType.MODULES)
                         prev_paths.add(moduledir)
                     if ('build' not in exclusions
                             and os.path.isdir(builddir)):
-                        newk.build = builddir
+                        newk.build = GenericFile(Path(builddir),
+                                                 KernelFileType.BUILD)
                         prev_paths.add(builddir)
 
         # fill .old files

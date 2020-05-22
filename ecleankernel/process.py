@@ -8,6 +8,8 @@ import os.path
 import re
 import typing
 
+from pathlib import Path
+
 from ecleankernel.kernel import Kernel
 
 
@@ -17,7 +19,7 @@ RemovableKernelDict = typing.Dict[Kernel, typing.List[str]]
 class RemovableKernelFiles(typing.NamedTuple):
     kernel: Kernel
     reason: typing.List[str]
-    files: typing.List[str]
+    files: typing.List[Path]
 
 
 def get_removable_files(removed_kernels: RemovableKernelDict,

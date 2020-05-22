@@ -9,6 +9,8 @@ import unittest
 
 from pathlib import Path
 
+from ecleankernel.file import KernelFileType as KFT
+from ecleankernel.file import GenericFile
 from ecleankernel.kernel import Kernel
 from ecleankernel.layout.std import StdLayout
 
@@ -18,7 +20,7 @@ TEST_DATA_DIR = Path(__file__).parent / 'data'
 
 def kernel_paths(kd: typing.List[Kernel]
                  ) -> typing.Iterable[typing.Tuple[
-                      typing.Optional[str], ...]]:
+                      typing.Optional[GenericFile], ...]]:
     """Get iterable of tuples for matching a kernel dict"""
     for k in kd:
         yield (
@@ -85,20 +87,20 @@ class StdLayoutTests(unittest.TestCase):
                         boot_directory=boot,
                         module_directory=modules))),
                 [('1.2.3',
-                  str(boot / 'vmlinuz-1.2.3'),
-                  str(boot / 'System.map-1.2.3'),
-                  str(boot / 'config-1.2.3'),
-                  str(modules / '1.2.3'),
-                  str(modules / '1.2.3/build'),
-                  str(boot / 'initrd-1.2.3.img'),
+                  GenericFile(boot / 'vmlinuz-1.2.3', KFT.KERNEL),
+                  GenericFile(boot / 'System.map-1.2.3', KFT.SYSTEM_MAP),
+                  GenericFile(boot / 'config-1.2.3', KFT.CONFIG),
+                  GenericFile(modules / '1.2.3', KFT.MODULES),
+                  GenericFile(modules / '1.2.3/build', KFT.BUILD),
+                  GenericFile(boot / 'initrd-1.2.3.img', KFT.INITRAMFS),
                   '1.2.3'),
                  ('1.2.3.old',
-                  str(boot / 'vmlinuz-1.2.3.old'),
-                  str(boot / 'System.map-1.2.3.old'),
-                  str(boot / 'config-1.2.3.old'),
-                  str(modules / '1.2.3'),
-                  str(modules / '1.2.3/build'),
-                  str(boot / 'initrd-1.2.3.img.old'),
+                  GenericFile(boot / 'vmlinuz-1.2.3.old', KFT.KERNEL),
+                  GenericFile(boot / 'System.map-1.2.3.old', KFT.SYSTEM_MAP),
+                  GenericFile(boot / 'config-1.2.3.old', KFT.CONFIG),
+                  GenericFile(modules / '1.2.3', KFT.MODULES),
+                  GenericFile(modules / '1.2.3/build', KFT.BUILD),
+                  GenericFile(boot / 'initrd-1.2.3.img.old', KFT.INITRAMFS),
                   '1.2.3')])
 
     def test_modules_only(self) -> None:
@@ -121,7 +123,7 @@ class StdLayoutTests(unittest.TestCase):
                   None,
                   None,
                   None,
-                  str(modules / '1.2.3'),
+                  GenericFile(modules / '1.2.3', KFT.MODULES),
                   None,
                   None,
                   None),
@@ -129,7 +131,7 @@ class StdLayoutTests(unittest.TestCase):
                   None,
                   None,
                   None,
-                  str(modules / '1.2.4'),
-                  str(modules / '1.2.4/build'),
+                  GenericFile(modules / '1.2.4', KFT.MODULES),
+                  GenericFile(modules / '1.2.4/build', KFT.BUILD),
                   None,
                   None)])

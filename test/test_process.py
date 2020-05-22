@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 from ecleankernel.__main__ import NullDebugger
+from ecleankernel.file import KernelFileType, GenericFile
 from ecleankernel.kernel import Kernel
 from ecleankernel.process import (
     RemovableKernelFiles,
@@ -42,13 +43,18 @@ class KernelRemovalTests(unittest.TestCase):
             pass
         os.mkdir(td / 'build')
 
-        self.kernels[0].vmlinuz = str(td / 'kernel.old')
-        self.kernels[0].build = str(td / 'build')
-        self.kernels[1].vmlinuz = str(td / 'kernel.new')
+        self.kernels[0].vmlinuz = GenericFile(
+            td / 'kernel.old', KernelFileType.KERNEL)
+        self.kernels[0].build = GenericFile(
+            td / 'build', KernelFileType.BUILD)
+        self.kernels[1].vmlinuz = GenericFile(
+            td / 'kernel.new', KernelFileType.KERNEL)
         self.kernels[1].build = self.kernels[0].build
         self.kernels[2].build = self.kernels[0].build
-        self.kernels[3].config = str(td / 'config-stray')
-        self.kernels[3].initramfs = str(td / 'initrd-stray.img')
+        self.kernels[3].config = GenericFile(
+            td / 'config-stray', KernelFileType.CONFIG)
+        self.kernels[3].initramfs = GenericFile(
+            td / 'initrd-stray.img', KernelFileType.INITRAMFS)
 
     def tearDown(self) -> None:
         self.td.cleanup()
@@ -59,6 +65,10 @@ class KernelRemovalTests(unittest.TestCase):
             self.kernels[2:])
 
     def test_get_removable_files(self) -> None:
+        td = Path(self.td.name)
+        vmlinuz0 = td / 'kernel.old'
+        config3 = td / 'config-stray'
+        initrd3 = td / 'initrd-stray.img'
         self.assertEqual(
             list(get_removable_files({self.kernels[0]: ['old'],
                                       self.kernels[2]: ['no vmlinuz'],
@@ -66,15 +76,13 @@ class KernelRemovalTests(unittest.TestCase):
                                       }, self.kernels)),
             [RemovableKernelFiles(self.kernels[0],
                                   ['old'],
-                                  [str(self.kernels[0].vmlinuz)]),
+                                  [vmlinuz0]),
              RemovableKernelFiles(self.kernels[2],
                                   ['no vmlinuz'],
                                   []),
              RemovableKernelFiles(self.kernels[3],
                                   ['no vmlinuz'],
-                                  [str(self.kernels[3].config),
-                                   str(self.kernels[3].initramfs),
-                                   ]),
+                                  [config3, initrd3]),
              ])
 
     def test_removal_no_limit(self) -> None:
