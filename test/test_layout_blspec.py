@@ -179,3 +179,28 @@ class BlSpecLayoutTests(unittest.TestCase):
                    ],
                   '1.2.3'),
                  ])
+
+    def test_find_modules_EFI(self) -> None:
+        with self.create_layout(efi_subdir=True) as td:
+            path = Path(td)
+            boot = path / f'boot/EFI/{self.machine_id}'
+            modules = path / 'lib/modules'
+
+            self.assertEqual(
+                sorted(kernel_paths(
+                    BlSpecLayout().find_kernels(
+                        root=path))),
+                [('1.2.2',
+                  [GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
+                   ],
+                  None),
+                 ('1.2.3',
+                  [GenericFile(boot / '1.2.3/initrd', KFT.INITRAMFS),
+                   KernelImage(boot / '1.2.3/linux'),
+                   GenericFile(boot / '1.2.3/misc', KFT.MISC),
+                   ModuleDirectory(modules / '1.2.3'),
+                   GenericFile(modules / '1.2.3/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.3'),
+                 ])
