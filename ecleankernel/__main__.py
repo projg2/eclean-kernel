@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 
+from ecleankernel import __version__
 from ecleankernel.bootloader import bootloaders, get_bootloader
 from ecleankernel.file import KernelImage, KernelFileType
 from ecleankernel.layout.blspec import BlSpecLayout
@@ -58,6 +59,9 @@ def main(argv):
     sorts = [MTimeSort, VersionSort]
 
     argp = argparse.ArgumentParser(description=ecleankern_desc.strip())
+    argp.add_argument('-V', '--version',
+                      action='version',
+                      version=__version__)
 
     group = argp.add_argument_group('action control')
     group.add_argument('-A', '--ask',
