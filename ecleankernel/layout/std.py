@@ -57,7 +57,7 @@ class StdLayout(object):
         return True
 
     def find_kernels(self,
-                     exclusions: typing.List[str] = [],
+                     exclusions: typing.Container[KernelFileType] = [],
                      boot_directory: Path = Path('/boot'),
                      module_directory: Path = Path('/lib/modules')
                      ) -> typing.List[Kernel]:
@@ -69,6 +69,9 @@ class StdLayout(object):
         to ignore.  `boot_directory` and `module_directory` specify
         paths to find kernels in.
         """
+
+        # this would wreak havok all around the place
+        assert KernelFileType.KERNEL not in exclusions
 
         # collect all module directories first
         module_dict: typing.Dict[str, typing.List[GenericFile]] = {}
@@ -86,17 +89,19 @@ class StdLayout(object):
                 mlist = module_dict.setdefault(fn, [])
                 mobj = ModuleDirectory(path)
 
-                try:
-                    build = mobj.get_build_dir()
-                    if os.path.isdir(build):
-                        mlist.append(GenericFile(build,
-                                                 KernelFileType.BUILD))
-                except FileNotFoundError:
-                    pass
+                if KernelFileType.BUILD not in exclusions:
+                    try:
+                        build = mobj.get_build_dir()
+                        if os.path.isdir(build):
+                            mlist.append(GenericFile(build,
+                                                     KernelFileType.BUILD))
+                    except FileNotFoundError:
+                        pass
 
                 # note: top directory must come last so that it isn't
                 # removed before its subdirs
-                mlist.append(mobj)
+                if KernelFileType.MODULES not in exclusions:
+                    mlist.append(mobj)
 
         # collect from /boot
         kernels: typing.Dict[str, typing.Dict[str, Kernel]] = {}
@@ -131,10 +136,11 @@ class StdLayout(object):
                 except UnrecognizedKernelError:
                     # fall back to filename
                     for ftype, prefix in self.prefixes:
-                        if fn.startswith(prefix):
-                            other_files.append(
-                                (GenericFile(path, ftype), ver))
-                            break
+                        if ftype not in exclusions:
+                            if fn.startswith(prefix):
+                                other_files.append(
+                                    (GenericFile(path, ftype), ver))
+                                break
                     continue
 
                 # the following is done only for kernel images

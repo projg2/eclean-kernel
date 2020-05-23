@@ -48,7 +48,8 @@ def make_test_files(spec: typing.Iterable[str]
 class StdLayoutTests(unittest.TestCase):
     maxDiff = None
 
-    def test_find_modules(self) -> None:
+    def create_layout(self) -> tempfile.TemporaryDirectory:
+        """Create the typical layout"""
         test_spec = [
             'boot/vmlinuz-1.2.3',
             'boot/System.map-1.2.3',
@@ -63,14 +64,23 @@ class StdLayoutTests(unittest.TestCase):
             'boot/System.map',
             'boot/config-',
         ]
-        with make_test_files(test_spec) as td_inst:
-            td = Path(td_inst)
-            boot = td / 'boot'
-            modules = td / 'lib/modules'
 
-            write_bzImage(boot / 'vmlinuz-1.2.3', b'1.2.3 test')
-            write_bzImage(boot / 'vmlinuz-1.2.3.old', b'1.2.3 test')
-            os.symlink('../../../usr/src/linux', modules / '1.2.3/build')
+        td = make_test_files(test_spec)
+        path = Path(td.name)
+        boot = path / 'boot'
+        modules = path / 'lib/modules'
+
+        write_bzImage(boot / 'vmlinuz-1.2.3', b'1.2.3 test')
+        write_bzImage(boot / 'vmlinuz-1.2.3.old', b'1.2.3 test')
+        os.symlink('../../../usr/src/linux', modules / '1.2.3/build')
+
+        return td
+
+    def test_find_modules(self) -> None:
+        with self.create_layout() as td:
+            path = Path(td)
+            boot = path / 'boot'
+            modules = path / 'lib/modules'
 
             self.assertEqual(
                 sorted(kernel_paths(
@@ -95,6 +105,97 @@ class StdLayoutTests(unittest.TestCase):
                    ModuleDirectory(modules / '1.2.3'),
                    GenericFile(modules / '1.2.3/../../../usr/src/linux',
                                KFT.BUILD),
+                   ],
+                  '1.2.3')])
+
+    def test_exclude_config(self) -> None:
+        with self.create_layout() as td:
+            path = Path(td)
+            boot = path / 'boot'
+            modules = path / 'lib/modules'
+
+            self.assertEqual(
+                sorted(kernel_paths(
+                    StdLayout().find_kernels(
+                        boot_directory=boot,
+                        exclusions=[KFT.CONFIG],
+                        module_directory=modules))),
+                [('1.2.3',
+                  [GenericFile(boot / 'System.map-1.2.3', KFT.SYSTEM_MAP),
+                   GenericFile(boot / 'initrd-1.2.3.img', KFT.INITRAMFS),
+                   KernelImage(boot / 'vmlinuz-1.2.3'),
+                   ModuleDirectory(modules / '1.2.3'),
+                   GenericFile(modules / '1.2.3/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.3'),
+                 ('1.2.3.old',
+                  [GenericFile(boot / 'System.map-1.2.3.old', KFT.SYSTEM_MAP),
+                   GenericFile(boot / 'initrd-1.2.3.img.old', KFT.INITRAMFS),
+                   KernelImage(boot / 'vmlinuz-1.2.3.old'),
+                   ModuleDirectory(modules / '1.2.3'),
+                   GenericFile(modules / '1.2.3/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.3')])
+
+    def test_exclude_modules(self) -> None:
+        with self.create_layout() as td:
+            path = Path(td)
+            boot = path / 'boot'
+            modules = path / 'lib/modules'
+
+            self.assertEqual(
+                sorted(kernel_paths(
+                    StdLayout().find_kernels(
+                        boot_directory=boot,
+                        exclusions=[KFT.MODULES],
+                        module_directory=modules))),
+                [('1.2.3',
+                  [GenericFile(boot / 'System.map-1.2.3', KFT.SYSTEM_MAP),
+                   GenericFile(boot / 'config-1.2.3', KFT.CONFIG),
+                   GenericFile(boot / 'initrd-1.2.3.img', KFT.INITRAMFS),
+                   KernelImage(boot / 'vmlinuz-1.2.3'),
+                   GenericFile(modules / '1.2.3/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.3'),
+                 ('1.2.3.old',
+                  [GenericFile(boot / 'System.map-1.2.3.old', KFT.SYSTEM_MAP),
+                   GenericFile(boot / 'config-1.2.3.old', KFT.CONFIG),
+                   GenericFile(boot / 'initrd-1.2.3.img.old', KFT.INITRAMFS),
+                   KernelImage(boot / 'vmlinuz-1.2.3.old'),
+                   GenericFile(modules / '1.2.3/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.3')])
+
+    def test_exclude_build(self) -> None:
+        with self.create_layout() as td:
+            path = Path(td)
+            boot = path / 'boot'
+            modules = path / 'lib/modules'
+
+            self.assertEqual(
+                sorted(kernel_paths(
+                    StdLayout().find_kernels(
+                        boot_directory=boot,
+                        exclusions=[KFT.BUILD],
+                        module_directory=modules))),
+                [('1.2.3',
+                  [GenericFile(boot / 'System.map-1.2.3', KFT.SYSTEM_MAP),
+                   GenericFile(boot / 'config-1.2.3', KFT.CONFIG),
+                   GenericFile(boot / 'initrd-1.2.3.img', KFT.INITRAMFS),
+                   KernelImage(boot / 'vmlinuz-1.2.3'),
+                   ModuleDirectory(modules / '1.2.3'),
+                   ],
+                  '1.2.3'),
+                 ('1.2.3.old',
+                  [GenericFile(boot / 'System.map-1.2.3.old', KFT.SYSTEM_MAP),
+                   GenericFile(boot / 'config-1.2.3.old', KFT.CONFIG),
+                   GenericFile(boot / 'initrd-1.2.3.img.old', KFT.INITRAMFS),
+                   KernelImage(boot / 'vmlinuz-1.2.3.old'),
+                   ModuleDirectory(modules / '1.2.3'),
                    ],
                   '1.2.3')])
 

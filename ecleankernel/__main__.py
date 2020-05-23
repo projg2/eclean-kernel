@@ -112,14 +112,15 @@ def main(argv):
     all_args.extend(argv)
     args = argp.parse_args(all_args)
 
-    exclusions = frozenset(args.exclude.split(','))
-    for x in exclusions:
+    exclusions = []
+    for x in frozenset(args.exclude.split(',')):
         if not x:
-            pass
+            continue
         elif x not in kernel_parts:
             argp.error('Invalid kernel part: %s' % x)
         elif x == 'vmlinuz':
             argp.error('Kernel exclusion unsupported')
+        exclusions.append(KernelFileType(x))
 
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
