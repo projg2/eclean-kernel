@@ -58,16 +58,14 @@ class StdLayout(ModuleDirLayout):
 
     def find_kernels(self,
                      exclusions: typing.Container[KernelFileType] = [],
-                     boot_directory: Path = Path('/boot'),
-                     module_directory: Path = Path('/lib/modules')
+                     root: Path = Path('/')
                      ) -> typing.List[Kernel]:
         """
         Find all files and directories related to installed kernels
 
         Find all kernel files and related data and return a list
         of `Kernel` objects.  `exclusions` specifies kernel parts
-        to ignore.  `boot_directory` and `module_directory` specify
-        paths to find kernels in.
+        to ignore.  `root` specifies the root directory to use.
         """
 
         # this would wreak havok all around the place
@@ -76,11 +74,12 @@ class StdLayout(ModuleDirLayout):
         # collect all module directories first
         module_dict = self.get_module_dict(
             exclusions=exclusions,
-            module_directory=module_directory)
+            module_directory=root / 'lib/modules')
 
         # collect from /boot
         kernels: typing.Dict[str, typing.Dict[str, Kernel]] = {}
         other_files: typing.List[typing.Tuple[GenericFile, str]] = []
+        boot_directory = root / 'boot'
         try:
             diter = os.listdir(boot_directory)
         except FileNotFoundError:

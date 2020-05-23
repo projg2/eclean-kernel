@@ -84,9 +84,7 @@ class StdLayoutTests(unittest.TestCase):
 
             self.assertEqual(
                 sorted(kernel_paths(
-                    StdLayout().find_kernels(
-                        boot_directory=boot,
-                        module_directory=modules))),
+                    StdLayout().find_kernels(root=path))),
                 [('1.2.3',
                   [GenericFile(boot / 'System.map-1.2.3', KFT.SYSTEM_MAP),
                    GenericFile(boot / 'config-1.2.3', KFT.CONFIG),
@@ -117,9 +115,8 @@ class StdLayoutTests(unittest.TestCase):
             self.assertEqual(
                 sorted(kernel_paths(
                     StdLayout().find_kernels(
-                        boot_directory=boot,
                         exclusions=[KFT.CONFIG],
-                        module_directory=modules))),
+                        root=path))),
                 [('1.2.3',
                   [GenericFile(boot / 'System.map-1.2.3', KFT.SYSTEM_MAP),
                    GenericFile(boot / 'initrd-1.2.3.img', KFT.INITRAMFS),
@@ -148,9 +145,8 @@ class StdLayoutTests(unittest.TestCase):
             self.assertEqual(
                 sorted(kernel_paths(
                     StdLayout().find_kernels(
-                        boot_directory=boot,
                         exclusions=[KFT.MODULES],
-                        module_directory=modules))),
+                        root=path))),
                 [('1.2.3',
                   [GenericFile(boot / 'System.map-1.2.3', KFT.SYSTEM_MAP),
                    GenericFile(boot / 'config-1.2.3', KFT.CONFIG),
@@ -179,9 +175,8 @@ class StdLayoutTests(unittest.TestCase):
             self.assertEqual(
                 sorted(kernel_paths(
                     StdLayout().find_kernels(
-                        boot_directory=boot,
                         exclusions=[KFT.BUILD],
-                        module_directory=modules))),
+                        root=path))),
                 [('1.2.3',
                   [GenericFile(boot / 'System.map-1.2.3', KFT.SYSTEM_MAP),
                    GenericFile(boot / 'config-1.2.3', KFT.CONFIG),
@@ -205,18 +200,15 @@ class StdLayoutTests(unittest.TestCase):
             'lib/modules/1.2.4/test.ko',
             'usr/src/linux/Makefile',
         ]
-        with make_test_files(test_spec) as td_inst:
-            td = Path(td_inst)
-            boot = td / 'boot'
-            modules = td / 'lib/modules'
+        with make_test_files(test_spec) as td:
+            path = Path(td)
+            modules = path / 'lib/modules'
 
             os.symlink('../../../usr/src/linux', modules / '1.2.4/build')
 
             self.assertEqual(
                 sorted(kernel_paths(
-                    StdLayout().find_kernels(
-                        boot_directory=boot,
-                        module_directory=modules))),
+                    StdLayout().find_kernels(root=path))),
                 [('1.2.3',
                   [ModuleDirectory(modules / '1.2.3')
                    ],
