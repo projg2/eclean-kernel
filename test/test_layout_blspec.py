@@ -8,6 +8,7 @@ import unittest
 
 from pathlib import Path
 
+from ecleankernel.__main__ import main
 from ecleankernel.file import KernelFileType as KFT
 from ecleankernel.file import GenericFile, KernelImage, ModuleDirectory
 from ecleankernel.layout.blspec import BlSpecLayout
@@ -26,14 +27,20 @@ class BlSpecLayoutTests(unittest.TestCase):
                       ) -> tempfile.TemporaryDirectory:
         subdir = 'EFI/' if efi_subdir else ''
         test_spec = [
+            f'boot/{subdir}{self.machine_id}/1.2.4/initrd',
             f'boot/{subdir}{self.machine_id}/1.2.3/initrd',
             f'boot/{subdir}{self.machine_id}/1.2.3/linux',
             f'boot/{subdir}{self.machine_id}/1.2.3/misc',
-            'etc/machine-id',
-            'lib/modules/1.2.3/test.ko',
-            'usr/src/linux/Makefile',
-            # stray files
             f'boot/{subdir}{self.machine_id}/1.2.2/initrd',
+            f'boot/{subdir}{self.machine_id}/1.2.2/linux',
+            f'boot/{subdir}{self.machine_id}/1.2.1/initrd',
+            f'boot/{subdir}{self.machine_id}/1.2.1/linux',
+            'etc/machine-id',
+            'lib/modules/1.2.4/test.ko',
+            'lib/modules/1.2.3/test.ko',
+            'lib/modules/1.2.2/test.ko',
+            'lib/modules/1.2.1/test.ko',
+            'usr/src/linux/Makefile',
         ]
 
         td = make_test_files(test_spec)
@@ -44,9 +51,42 @@ class BlSpecLayoutTests(unittest.TestCase):
         with open(path / 'etc/machine-id', 'w') as f:
             f.write(f'{self.machine_id}\n')
         write_bzImage(bootsub / '1.2.3/linux', b'1.2.3 test')
+        write_bzImage(bootsub / '1.2.2/linux', b'1.2.2 test')
+        write_bzImage(bootsub / '1.2.1/linux', b'1.2.1 test')
         os.symlink('../../../usr/src/linux', modules / '1.2.3/build')
+        os.symlink('../../../usr/src/linux', modules / '1.2.2/build')
 
         return td
+
+    def assert_kernels(self,
+                       root: Path,
+                       efi_subdir: bool = False,
+                       k124: bool = True,
+                       k123: bool = True,
+                       k122: bool = True,
+                       k121: bool = True
+                       ) -> None:
+        """Assert whether specified kernels were removed or kept"""
+        subdir = 'EFI/' if efi_subdir else ''
+        files = {
+            f'boot/{subdir}{self.machine_id}/1.2.4/initrd': k124,
+            f'boot/{subdir}{self.machine_id}/1.2.3/initrd': k123,
+            f'boot/{subdir}{self.machine_id}/1.2.3/linux': k123,
+            f'boot/{subdir}{self.machine_id}/1.2.3/misc': k123,
+            f'boot/{subdir}{self.machine_id}/1.2.2/initrd': k122,
+            f'boot/{subdir}{self.machine_id}/1.2.2/linux': k122,
+            f'boot/{subdir}{self.machine_id}/1.2.1/initrd': k121,
+            f'boot/{subdir}{self.machine_id}/1.2.1/linux': k121,
+            'etc/machine-id': True,
+            'lib/modules/1.2.4/test.ko': k124,
+            'lib/modules/1.2.3/test.ko': k123,
+            'lib/modules/1.2.2/test.ko': k122,
+            'lib/modules/1.2.1/test.ko': k121,
+            'usr/src/linux/Makefile': k123 or k122,
+        }
+        expected_files = [f for f, exp in files.items() if exp]
+        found_files = [f for f in files if (root / f).exists()]
+        self.assertEqual(found_files, expected_files)
 
     def test_accept_plain(self) -> None:
         with self.create_layout() as td:
@@ -91,10 +131,20 @@ class BlSpecLayoutTests(unittest.TestCase):
                 sorted(kernel_paths(
                     BlSpecLayout().find_kernels(
                         root=path))),
-                [('1.2.2',
-                  [GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
+                [('1.2.1',
+                  [GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
+                   KernelImage(boot / '1.2.1/linux'),
+                   ModuleDirectory(modules / '1.2.1'),
                    ],
-                  None),
+                  '1.2.1'),
+                 ('1.2.2',
+                  [GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
+                   KernelImage(boot / '1.2.2/linux'),
+                   ModuleDirectory(modules / '1.2.2'),
+                   GenericFile(modules / '1.2.2/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.2'),
                  ('1.2.3',
                   [GenericFile(boot / '1.2.3/initrd', KFT.INITRAMFS),
                    KernelImage(boot / '1.2.3/linux'),
@@ -104,6 +154,11 @@ class BlSpecLayoutTests(unittest.TestCase):
                                KFT.BUILD),
                    ],
                   '1.2.3'),
+                 ('1.2.4',
+                  [GenericFile(boot / '1.2.4/initrd', KFT.INITRAMFS),
+                   ModuleDirectory(modules / '1.2.4'),
+                   ],
+                  None),
                  ])
 
     def test_exclude_misc(self) -> None:
@@ -117,10 +172,20 @@ class BlSpecLayoutTests(unittest.TestCase):
                     BlSpecLayout().find_kernels(
                         exclusions=[KFT.MISC],
                         root=path))),
-                [('1.2.2',
-                  [GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
+                [('1.2.1',
+                  [GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
+                   KernelImage(boot / '1.2.1/linux'),
+                   ModuleDirectory(modules / '1.2.1'),
                    ],
-                  None),
+                  '1.2.1'),
+                 ('1.2.2',
+                  [GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
+                   KernelImage(boot / '1.2.2/linux'),
+                   ModuleDirectory(modules / '1.2.2'),
+                   GenericFile(modules / '1.2.2/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.2'),
                  ('1.2.3',
                   [GenericFile(boot / '1.2.3/initrd', KFT.INITRAMFS),
                    KernelImage(boot / '1.2.3/linux'),
@@ -129,6 +194,11 @@ class BlSpecLayoutTests(unittest.TestCase):
                                KFT.BUILD),
                    ],
                   '1.2.3'),
+                 ('1.2.4',
+                  [GenericFile(boot / '1.2.4/initrd', KFT.INITRAMFS),
+                   ModuleDirectory(modules / '1.2.4'),
+                   ],
+                  None),
                  ])
 
     def test_exclude_modules(self) -> None:
@@ -142,10 +212,18 @@ class BlSpecLayoutTests(unittest.TestCase):
                     BlSpecLayout().find_kernels(
                         exclusions=[KFT.MODULES],
                         root=path))),
-                [('1.2.2',
-                  [GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
+                [('1.2.1',
+                  [GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
+                   KernelImage(boot / '1.2.1/linux'),
                    ],
-                  None),
+                  '1.2.1'),
+                 ('1.2.2',
+                  [GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
+                   KernelImage(boot / '1.2.2/linux'),
+                   GenericFile(modules / '1.2.2/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.2'),
                  ('1.2.3',
                   [GenericFile(boot / '1.2.3/initrd', KFT.INITRAMFS),
                    KernelImage(boot / '1.2.3/linux'),
@@ -154,6 +232,10 @@ class BlSpecLayoutTests(unittest.TestCase):
                                KFT.BUILD),
                    ],
                   '1.2.3'),
+                 ('1.2.4',
+                  [GenericFile(boot / '1.2.4/initrd', KFT.INITRAMFS),
+                   ],
+                  None),
                  ])
 
     def test_exclude_build(self) -> None:
@@ -167,10 +249,18 @@ class BlSpecLayoutTests(unittest.TestCase):
                     BlSpecLayout().find_kernels(
                         exclusions=[KFT.BUILD],
                         root=path))),
-                [('1.2.2',
-                  [GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
+                [('1.2.1',
+                  [GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
+                   KernelImage(boot / '1.2.1/linux'),
+                   ModuleDirectory(modules / '1.2.1'),
                    ],
-                  None),
+                  '1.2.1'),
+                 ('1.2.2',
+                  [GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
+                   KernelImage(boot / '1.2.2/linux'),
+                   ModuleDirectory(modules / '1.2.2'),
+                   ],
+                  '1.2.2'),
                  ('1.2.3',
                   [GenericFile(boot / '1.2.3/initrd', KFT.INITRAMFS),
                    KernelImage(boot / '1.2.3/linux'),
@@ -178,6 +268,11 @@ class BlSpecLayoutTests(unittest.TestCase):
                    ModuleDirectory(modules / '1.2.3'),
                    ],
                   '1.2.3'),
+                 ('1.2.4',
+                  [GenericFile(boot / '1.2.4/initrd', KFT.INITRAMFS),
+                   ModuleDirectory(modules / '1.2.4'),
+                   ],
+                  None),
                  ])
 
     def test_find_modules_EFI(self) -> None:
@@ -190,10 +285,20 @@ class BlSpecLayoutTests(unittest.TestCase):
                 sorted(kernel_paths(
                     BlSpecLayout().find_kernels(
                         root=path))),
-                [('1.2.2',
-                  [GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
+                [('1.2.1',
+                  [GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
+                   KernelImage(boot / '1.2.1/linux'),
+                   ModuleDirectory(modules / '1.2.1'),
                    ],
-                  None),
+                  '1.2.1'),
+                 ('1.2.2',
+                  [GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
+                   KernelImage(boot / '1.2.2/linux'),
+                   ModuleDirectory(modules / '1.2.2'),
+                   GenericFile(modules / '1.2.2/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.2'),
                  ('1.2.3',
                   [GenericFile(boot / '1.2.3/initrd', KFT.INITRAMFS),
                    KernelImage(boot / '1.2.3/linux'),
@@ -203,4 +308,64 @@ class BlSpecLayoutTests(unittest.TestCase):
                                KFT.BUILD),
                    ],
                   '1.2.3'),
+                 ('1.2.4',
+                  [GenericFile(boot / '1.2.4/initrd', KFT.INITRAMFS),
+                   ModuleDirectory(modules / '1.2.4'),
+                   ],
+                  None),
                  ])
+
+    def test_main_remove(self) -> None:
+        with self.create_layout() as td:
+            self.assertEqual(
+                main(['--destructive',
+                      '--root', td, '--debug', '--no-mount']),
+                0)
+            self.assert_kernels(Path(td),
+                                k124=False)
+
+    def test_main_remove_pretend(self) -> None:
+        with self.create_layout() as td:
+            self.assertEqual(
+                main(['--destructive', '--pretend',
+                      '--root', td, '--debug', '--no-mount']),
+                0)
+            self.assert_kernels(Path(td))
+
+    def test_main_remove_all(self) -> None:
+        with self.create_layout() as td:
+            self.assertEqual(
+                main(['--all', '--destructive',
+                      '--root', td, '--debug', '--no-mount']),
+                0)
+            self.assert_kernels(Path(td),
+                                k121=False,
+                                k122=False,
+                                k123=False,
+                                k124=False)
+
+    def test_main_remove_all_pretend(self) -> None:
+        with self.create_layout() as td:
+            self.assertEqual(
+                main(['--all', '--destructive', '--pretend',
+                      '--root', td, '--debug', '--no-mount']),
+                0)
+            self.assert_kernels(Path(td))
+
+    def test_main_remove_n2(self) -> None:
+        with self.create_layout() as td:
+            self.assertEqual(
+                main(['--destructive', '-n', '2',
+                      '--root', td, '--debug', '--no-mount']),
+                0)
+            self.assert_kernels(Path(td),
+                                k121=False,
+                                k124=False)
+
+    def test_main_remove_n2_pretend(self) -> None:
+        with self.create_layout() as td:
+            self.assertEqual(
+                main(['--destructive', '-n', '2', '--pretend',
+                      '--root', td, '--debug', '--no-mount']),
+                0)
+            self.assert_kernels(Path(td))
