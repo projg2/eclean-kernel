@@ -195,7 +195,7 @@ def main(argv):
                                  reverse=True)
                 for k in ordered:
                     print(f'{k.version} [{k.real_kv}]')
-                    for f in k.all_files:
+                    for f in sorted(k.all_files, key=lambda f: f.path):
                         print(f'- {f.ftype.value}: {f.path}')
                     ts = time.strftime("%Y-%m-%d %H:%M:%S",
                                        time.gmtime(k.mtime))
@@ -290,14 +290,17 @@ def main(argv):
                     for f in k.all_files:
                         if f.path in files:
                             sign = '-'
+                            if f.path in files:
+                                try:
+                                    if os.path.isdir(f.path):
+                                        shutil.rmtree(f.path)
+                                    else:
+                                        os.unlink(f.path)
+                                except FileNotFoundError:
+                                    sign = 'x'
                         else:
                             sign = '+'
                         print(f' [{sign}] {f.path}')
-                        if f.path in files:
-                            if os.path.isdir(f.path):
-                                shutil.rmtree(f.path)
-                            else:
-                                os.unlink(f.path)
                     nremoved += 1
 
                 if nremoved:
