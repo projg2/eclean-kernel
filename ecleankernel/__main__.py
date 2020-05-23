@@ -211,15 +211,16 @@ def main(argv):
                 destructive=args.destructive)
 
             has_kernel_install = False
-            try:
-                subprocess.Popen(['kernel-install', '--help'],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE).communicate()
-            except OSError as e:
-                if e.errno != errno.ENOENT:
-                    raise
-            else:
-                has_kernel_install = True
+            if args.root == Path('/'):
+                try:
+                    subprocess.Popen(['kernel-install', '--help'],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE).communicate()
+                except OSError as e:
+                    if e.errno != errno.ENOENT:
+                        raise
+                else:
+                    has_kernel_install = True
 
             if not removals:
                 print('No outdated kernels found.')
@@ -240,9 +241,10 @@ def main(argv):
                 if has_kernel_install:
                     print('kernel-install will be called to perform'
                           + ' prerm tasks.')
-                if hasattr(bootloader, 'postrm'):
-                    print('Bootloader %s config will be updated.' %
-                          bootloader.name)
+                if args.root == Path('/'):
+                    if hasattr(bootloader, 'postrm'):
+                        print('Bootloader %s config will be updated.' %
+                              bootloader.name)
             else:
                 bootfs.rwmount()
                 for k in removals:
@@ -305,8 +307,9 @@ def main(argv):
 
                 if nremoved:
                     print('Removed %d kernels' % nremoved)
-                    if hasattr(bootloader, 'postrm'):
-                        bootloader.postrm()
+                    if args.root == Path('/'):
+                        if hasattr(bootloader, 'postrm'):
+                            bootloader.postrm()
 
             return 0
         finally:
