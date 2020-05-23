@@ -15,6 +15,7 @@ import time
 
 from ecleankernel.bootloader import bootloaders, get_bootloader
 from ecleankernel.file import KernelImage, KernelFileType
+from ecleankernel.layout.blspec import BlSpecLayout
 from ecleankernel.layout.std import StdLayout
 from ecleankernel.process import get_removal_list, get_removable_files
 
@@ -53,7 +54,7 @@ as root, or preferably mount /boot before using it.'''
 
 def main(argv):
     kernel_parts = [x.value for x in KernelFileType.__members__.values()]
-    layouts = [StdLayout]
+    layouts = [BlSpecLayout, StdLayout]
 
     argp = argparse.ArgumentParser(description=ecleankern_desc.strip())
     argp.add_argument('-a', '--all',
@@ -79,7 +80,7 @@ def main(argv):
     argp.add_argument('-L', '--layout',
                       default='auto',
                       help=f'Layout used (auto, '
-                           f'{", ".join(l.name for l in layouts)}')
+                           f'{", ".join(l.name for l in layouts)})')
     argp.add_argument('-M', '--no-mount',
                       action='store_false',
                       help='Disable (re-)mounting /boot if necessary')

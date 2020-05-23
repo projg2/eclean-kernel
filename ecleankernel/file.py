@@ -17,6 +17,7 @@ class KernelFileType(enum.Enum):
     INITRAMFS = 'initramfs'
     MODULES = 'modules'
     BUILD = 'build'
+    MISC = 'misc'
 
 
 class UnrecognizedKernelError(Exception):
