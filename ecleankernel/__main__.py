@@ -18,7 +18,7 @@ from ecleankernel.file import KernelImage, KernelFileType
 from ecleankernel.layout.blspec import BlSpecLayout
 from ecleankernel.layout.std import StdLayout
 from ecleankernel.process import get_removal_list, get_removable_files
-
+from ecleankernel.sort import MTimeSort, VersionSort
 
 ecleankern_desc = '''
 Remove old kernel versions, keeping either N newest kernels (with -n)
@@ -55,6 +55,7 @@ as root, or preferably mount /boot before using it.'''
 def main(argv):
     kernel_parts = [x.value for x in KernelFileType.__members__.values()]
     layouts = [BlSpecLayout, StdLayout]
+    sorts = [MTimeSort, VersionSort]
 
     argp = argparse.ArgumentParser(description=ecleankern_desc.strip())
     argp.add_argument('-a', '--all',
@@ -92,6 +93,11 @@ def main(argv):
                       action='store_true',
                       help='Print the list of kernels to be removed '
                            'and exit')
+    argp.add_argument('-s', '--sort-order',
+                      default='version',
+                      help=f'Kernel sort order ('
+                           f'{", ".join(s.name for s in sorts)}); '
+                           f'default: version')
     argp.add_argument('-x', '--exclude',
                       default='',
                       help='Exclude kernel parts from being removed '
@@ -137,6 +143,13 @@ def main(argv):
         argp.error(f'Invalid layout: {args.layout}')
     layout = layout_cls()
 
+    for sort_cls in sorts:
+        if args.sort_order == sort_cls.name:
+            break
+    else:
+        argp.error(f'Invalid sort order: {args.sort}')
+    sorter = sort_cls()
+
     bootfs = DummyMount()
     try:
         import pymountboot
@@ -157,7 +170,7 @@ def main(argv):
 
             if args.list_kernels:
                 ordered = sorted(kernels,
-                                 key=lambda k: k.mtime,
+                                 key=sorter.key,
                                  reverse=True)
                 for k in ordered:
                     print(f'{k.version} [{k.real_kv}]')

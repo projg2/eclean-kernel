@@ -58,5 +58,17 @@ class Kernel(object):
             if not os.access(f.path, os.W_OK):
                 raise WriteAccessError(f.path)
 
+    def __eq__(self,
+               other: object
+               ) -> bool:
+        if not isinstance(other, Kernel):
+            return False
+        return (self.version == other.version
+                and self.all_files == other.all_files)
+
+    def __hash__(self
+                 ) -> int:
+        return hash(self.version)
+
     def __repr__(self):
         return f'Kernel({repr(self.version)})'
