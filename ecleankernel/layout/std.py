@@ -52,7 +52,8 @@ class StdLayout(ModuleDirLayout):
     ]
 
     @staticmethod
-    def is_acceptable() -> bool:
+    def is_acceptable(root: Path = Path('/')
+                      ) -> bool:
         """Return true (this layout is fallback)"""
         return True
 

@@ -13,6 +13,8 @@ import subprocess
 import sys
 import time
 
+from pathlib import Path
+
 from ecleankernel import __version__
 from ecleankernel.bootloader import bootloaders, get_bootloader
 from ecleankernel.file import KernelImage, KernelFileType
@@ -84,6 +86,10 @@ def main(argv):
                        default='auto',
                        help=f'Layout used (auto, '
                             f'{", ".join(l.name for l in layouts)})')
+    group.add_argument('-r', '--root',
+                       type=Path,
+                       default=Path('/'),
+                       help='Alternate filesystem root to use')
 
     group = argp.add_argument_group('kernel selection')
     group.add_argument('-a', '--all',
@@ -148,7 +154,8 @@ def main(argv):
         logging.getLogger().setLevel(logging.INFO)
 
     for layout_cls in layouts:
-        if args.layout == 'auto' and layout_cls.is_acceptable():
+        if (args.layout == 'auto'
+                and layout_cls.is_acceptable(root=args.root)):
             break
         elif args.layout == layout_cls.name:
             break
@@ -179,7 +186,8 @@ def main(argv):
             raise MountError()
 
         try:
-            kernels = layout.find_kernels(exclusions=exclusions)
+            kernels = layout.find_kernels(exclusions=exclusions,
+                                          root=args.root)
 
             if args.list_kernels:
                 ordered = sorted(kernels,
