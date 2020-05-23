@@ -58,51 +58,60 @@ def main(argv):
     sorts = [MTimeSort, VersionSort]
 
     argp = argparse.ArgumentParser(description=ecleankern_desc.strip())
-    argp.add_argument('-a', '--all',
-                      action='store_true',
-                      help='Remove all kernels unless used by bootloader')
-    argp.add_argument('-A', '--ask',
-                      action='store_true',
-                      help='Ask before removing each kernel')
-    argp.add_argument('-b', '--bootloader',
-                      default='auto',
-                      help='Bootloader used (auto, %s)'
-                            % ', '.join([b.name for b in bootloaders]))
-    argp.add_argument('-d', '--destructive',
-                      action='store_true',
-                      help='Destructive mode: remove kernels even when '
-                           'referenced by bootloader')
-    argp.add_argument('-D', '--debug',
-                      action='store_true',
-                      help='Enable debugging output')
-    argp.add_argument('-l', '--list-kernels',
-                      action='store_true',
-                      help='List kernel files and exit')
-    argp.add_argument('-L', '--layout',
-                      default='auto',
-                      help=f'Layout used (auto, '
-                           f'{", ".join(l.name for l in layouts)})')
-    argp.add_argument('-M', '--no-mount',
-                      action='store_false',
-                      help='Disable (re-)mounting /boot if necessary')
-    argp.add_argument('-n', '--num',
-                      type=int,
-                      default=0,
-                      help='Leave only newest NUM kernels (by mtime)')
-    argp.add_argument('-p', '--pretend',
-                      action='store_true',
-                      help='Print the list of kernels to be removed '
-                           'and exit')
-    argp.add_argument('-s', '--sort-order',
-                      default='version',
-                      help=f'Kernel sort order ('
-                           f'{", ".join(s.name for s in sorts)}); '
-                           f'default: version')
-    argp.add_argument('-x', '--exclude',
-                      default='',
-                      help='Exclude kernel parts from being removed '
-                           '(comma-separated, supported parts: %s)'
-                           % ', '.join(kernel_parts))
+
+    group = argp.add_argument_group('action control')
+    group.add_argument('-A', '--ask',
+                       action='store_true',
+                       help='Ask before removing each kernel')
+    group.add_argument('-l', '--list-kernels',
+                       action='store_true',
+                       help='List kernel files and exit')
+    group.add_argument('-p', '--pretend',
+                       action='store_true',
+                       help='Print the list of kernels to be removed '
+                            'and exit')
+
+    group = argp.add_argument_group('system configuration')
+    group.add_argument('-b', '--bootloader',
+                       default='auto',
+                       help=f'Bootloader used (auto, '
+                            f'{", ".join(b.name for b in bootloaders)})')
+    group.add_argument('-L', '--layout',
+                       default='auto',
+                       help=f'Layout used (auto, '
+                            f'{", ".join(l.name for l in layouts)})')
+
+    group = argp.add_argument_group('kernel selection')
+    group.add_argument('-a', '--all',
+                       action='store_true',
+                       help='Remove all kernels unless used by bootloader')
+    group.add_argument('-d', '--destructive',
+                       action='store_true',
+                       help='Destructive mode: remove kernels even when '
+                            'referenced by bootloader')
+    group.add_argument('-n', '--num',
+                       type=int,
+                       default=0,
+                       help='Leave only newest NUM kernels (see also: '
+                            '--sort-order)')
+    group.add_argument('-s', '--sort-order',
+                       default='version',
+                       help=f'Kernel sort order ('
+                            f'{", ".join(s.name for s in sorts)}); '
+                            f'default: version')
+
+    group = argp.add_argument_group('misc options')
+    group.add_argument('-D', '--debug',
+                       action='store_true',
+                       help='Enable debugging output')
+    group.add_argument('-M', '--no-mount',
+                       action='store_false',
+                       help='Disable (re-)mounting /boot if necessary')
+    group.add_argument('-x', '--exclude',
+                       default='',
+                       help=f'Exclude kernel parts from being removed '
+                            f'(comma-separated, supported parts: '
+                            f'{", ".join(kernel_parts)})')
 
     all_args = []
     config_dirs = os.environ.get('XDG_CONFIG_DIRS', '/etc/xdg').split(':')
