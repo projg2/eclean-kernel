@@ -277,8 +277,6 @@ def main(argv):
                           (k.version, ', '.join(reason)))
 
                     if has_kernel_install:
-                        # TODO: kernel-install will remove modules
-                        # when it's not meant to
                         cmd = ['kernel-install', 'remove']
                         for kf in k.all_files:
                             if isinstance(kf, KernelImage):
