@@ -13,13 +13,13 @@ from ecleankernel.file import (
     KernelFileType,
     GenericFile,
     KernelImage,
-    ModuleDirectory,
     UnrecognizedKernelError,
     )
 from ecleankernel.kernel import Kernel
+from ecleankernel.layout.moduledir import ModuleDirLayout
 
 
-class StdLayout(object):
+class StdLayout(ModuleDirLayout):
     """
     Standard /boot layout used by pre-systemd-boot bootloaders
 
@@ -74,34 +74,9 @@ class StdLayout(object):
         assert KernelFileType.KERNEL not in exclusions
 
         # collect all module directories first
-        module_dict: typing.Dict[str, typing.List[GenericFile]] = {}
-        try:
-            diter = os.listdir(module_directory)
-        except FileNotFoundError:
-            pass
-        else:
-            for fn in diter:
-                if fn.startswith('.'):
-                    continue
-                path = module_directory / fn
-                if path.is_symlink() or not path.is_dir():
-                    continue
-                mlist = module_dict.setdefault(fn, [])
-                mobj = ModuleDirectory(path)
-
-                if KernelFileType.BUILD not in exclusions:
-                    try:
-                        build = mobj.get_build_dir()
-                        if os.path.isdir(build):
-                            mlist.append(GenericFile(build,
-                                                     KernelFileType.BUILD))
-                    except FileNotFoundError:
-                        pass
-
-                # note: top directory must come last so that it isn't
-                # removed before its subdirs
-                if KernelFileType.MODULES not in exclusions:
-                    mlist.append(mobj)
+        module_dict = self.get_module_dict(
+            exclusions=exclusions,
+            module_directory=module_directory)
 
         # collect from /boot
         kernels: typing.Dict[str, typing.Dict[str, Kernel]] = {}
