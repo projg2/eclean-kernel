@@ -13,6 +13,7 @@ from pathlib import Path
 
 from ecleankernel.file import KernelImage
 from ecleankernel.kernel import Kernel
+from ecleankernel.sort import KernelSort
 
 
 RemovableKernelDict = typing.Dict[Kernel, typing.List[str]]
@@ -57,6 +58,7 @@ def remove_stray(kernels: typing.Iterable[Kernel]
 
 
 def get_removal_list(kernels: typing.List[Kernel],
+                     sorter: KernelSort,
                      limit: int = 0,
                      bootloader: typing.Optional[typing.Any] = None,
                      destructive: bool = False
@@ -108,7 +110,10 @@ def get_removal_list(kernels: typing.List[Kernel],
             used = frozenset(unprefixify(used_paths))
 
         if limit is not None:
-            ordered = sorted(kernels, key=lambda k: k.mtime, reverse=True)
+            ordered = sorted(
+                (k for k in kernels if k not in remove_kernels),
+                key=sorter.key,
+                reverse=True)
             candidates = ordered[limit:]
         else:
             candidates = kernels
@@ -126,7 +131,7 @@ def get_removal_list(kernels: typing.List[Kernel],
 
     for k in list(remove_kernels):
         if k.version == current:
-            print('Preserving currently running kernel (%s)' % current)
+            print(f'Preserving currently running kernel ({current})')
             del remove_kernels[k]
 
     return remove_kernels

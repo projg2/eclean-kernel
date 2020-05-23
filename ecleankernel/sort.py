@@ -2,13 +2,31 @@
 # (c) 2020 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
+import abc
 import re
 import typing
 
 from ecleankernel.kernel import Kernel
 
 
-class VersionSort(object):
+class KernelSort(abc.ABC):
+    """Abstract sorter class"""
+
+    @property
+    @abc.abstractmethod
+    def name(self):
+        """Sorter name"""
+        pass
+
+    @abc.abstractmethod
+    def key(self,
+            k: Kernel
+            ) -> typing.Any:
+        """Return the sort key for `k`"""
+        pass
+
+
+class VersionSort(KernelSort):
     """Sort according to versions"""
 
     name = 'version'
@@ -24,7 +42,6 @@ class VersionSort(object):
     def key(self,
             k: Kernel
             ) -> tuple:
-        """The key for sorting Kernels"""
         def process_comp(comp: typing.Iterable[str]
                          ) -> typing.Iterable[typing.Tuple[int, str]]:
             for c in comp:
@@ -42,7 +59,7 @@ class VersionSort(object):
         return tuple(process_comp(self.split_re.findall(k.version)))
 
 
-class MTimeSort(object):
+class MTimeSort(KernelSort):
     """Sort according to mtimes"""
 
     name = 'mtime'
@@ -50,5 +67,4 @@ class MTimeSort(object):
     def key(self,
             k: Kernel
             ) -> float:
-        """The key for sorting Kernels"""
         return k.mtime

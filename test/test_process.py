@@ -17,6 +17,7 @@ from ecleankernel.process import (
     get_removal_list,
     remove_stray,
     )
+from ecleankernel.sort import VersionSort
 
 from test.test_file import write_bzImage
 
@@ -24,20 +25,16 @@ from test.test_file import write_bzImage
 class KernelRemovalTests(unittest.TestCase):
     def setUp(self) -> None:
         self.kernels = [
-            Kernel('old'),
-            Kernel('new'),
-            Kernel('stray'),
-            Kernel('stray-files'),
+            Kernel('1.old'),
+            Kernel('2.new'),
+            Kernel('3.stray'),
+            Kernel('4.stray-files'),
         ]
 
         self.td = tempfile.TemporaryDirectory()
         td = Path(self.td.name)
         write_bzImage(td / 'kernel.old', b'old')
         write_bzImage(td / 'kernel.new', b'new')
-        new_stat = os.stat(td / 'kernel.new')
-        # make sure that 'new' is newer
-        os.utime(td / 'kernel.old', (new_stat.st_atime,
-                                     new_stat.st_mtime - 1))
         with open(td / 'config-stray', 'w'):
             pass
         with open(td / 'initrd-stray.img', 'w'):
@@ -94,6 +91,7 @@ class KernelRemovalTests(unittest.TestCase):
     def test_removal_no_limit(self) -> None:
         self.assertEqual(
             get_removal_list(self.kernels,
+                             sorter=VersionSort(),
                              limit=0),
             {self.kernels[2]: ['vmlinuz does not exist'],
              self.kernels[3]: ['vmlinuz does not exist'],
@@ -102,16 +100,18 @@ class KernelRemovalTests(unittest.TestCase):
     def test_removal_destructive(self) -> None:
         self.assertEqual(
             get_removal_list(self.kernels,
+                             sorter=VersionSort(),
                              limit=1,
                              destructive=True),
-            {self.kernels[2]: ['vmlinuz does not exist', 'unwanted'],
-             self.kernels[3]: ['vmlinuz does not exist', 'unwanted'],
+            {self.kernels[2]: ['vmlinuz does not exist'],
+             self.kernels[3]: ['vmlinuz does not exist'],
              self.kernels[0]: ['unwanted'],
              })
 
     def test_removal_no_bootloader(self) -> None:
         with self.assertRaises(SystemError):
             get_removal_list(self.kernels,
+                             sorter=VersionSort(),
                              limit=1,
                              destructive=False)
 
@@ -128,6 +128,7 @@ class KernelRemovalTests(unittest.TestCase):
 
         self.assertEqual(
             get_removal_list(self.kernels,
+                             sorter=VersionSort(),
                              limit=1,
                              destructive=False,
                              bootloader=MockBootloader()),
@@ -142,13 +143,14 @@ class KernelRemovalTests(unittest.TestCase):
                              uname: MagicMock
                              ) -> None:
         uname.return_value = (
-            'Linux', 'localhost', 'old', '', 'x86_64')
+            'Linux', 'localhost', '1.old', '', 'x86_64')
         self.assertEqual(
             get_removal_list(self.kernels,
+                             sorter=VersionSort(),
                              limit=1,
                              destructive=True),
-            {self.kernels[2]: ['vmlinuz does not exist', 'unwanted'],
-             self.kernels[3]: ['vmlinuz does not exist', 'unwanted'],
+            {self.kernels[2]: ['vmlinuz does not exist'],
+             self.kernels[3]: ['vmlinuz does not exist'],
              })
 
     @patch('ecleankernel.process.os.uname')
@@ -156,11 +158,12 @@ class KernelRemovalTests(unittest.TestCase):
                                    uname: MagicMock
                                    ) -> None:
         uname.return_value = (
-            'Linux', 'localhost', 'stray', '', 'x86_64')
+            'Linux', 'localhost', '3.stray', '', 'x86_64')
         self.assertEqual(
             get_removal_list(self.kernels,
+                             sorter=VersionSort(),
                              limit=1,
                              destructive=True),
-            {self.kernels[3]: ['vmlinuz does not exist', 'unwanted'],
+            {self.kernels[3]: ['vmlinuz does not exist'],
              self.kernels[0]: ['unwanted'],
              })

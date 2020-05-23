@@ -198,6 +198,7 @@ def main(argv):
             removals = get_removal_list(
                 kernels,
                 limit=None if args.all else args.num,
+                sorter=sorter,
                 bootloader=bootloader,
                 destructive=args.destructive)
 
