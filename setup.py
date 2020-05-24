@@ -17,7 +17,7 @@ setup(
     packages=find_packages(exclude=['test']),
     entry_points={
         'console_scripts': [
-            'eclean-kernel=ecleankernel:setuptools_main',
+            'eclean-kernel=ecleankernel.__main__:setuptools_main',
         ],
     },
 
