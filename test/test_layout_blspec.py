@@ -27,6 +27,11 @@ class BlSpecLayoutTests(unittest.TestCase):
 
     machine_id = '0123456789abcdef0123456789abcdef'
 
+    def setUp(self) -> None:
+        # prevent system configs from interfering
+        os.environ['XDG_CONFIG_DIRS'] = '/dev/null'
+        os.environ['XDG_CONFIG_HOME'] = '/dev/null'
+
     def create_layout(self,
                       efi_subdir: bool = False
                       ) -> tempfile.TemporaryDirectory:

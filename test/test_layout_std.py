@@ -51,6 +51,11 @@ def make_test_files(spec: typing.Iterable[str]
 class StdLayoutTests(unittest.TestCase):
     maxDiff = None
 
+    def setUp(self) -> None:
+        # prevent system configs from interfering
+        os.environ['XDG_CONFIG_DIRS'] = '/dev/null'
+        os.environ['XDG_CONFIG_HOME'] = '/dev/null'
+
     def create_layout(self) -> tempfile.TemporaryDirectory:
         """Create the typical layout"""
         test_spec = [
@@ -412,3 +417,36 @@ class StdLayoutTests(unittest.TestCase):
                 main(['--destructive', '-n', '2', '--pretend',
                       '--layout', 'blspec',
                       '--root', td, '--debug', '--no-mount'])
+
+    def test_config_file_system(self) -> None:
+        with self.create_layout() as td:
+            with open(Path(td) / 'eclean-kernel.rc', 'w') as f:
+                f.write('-n "2"\n')
+            os.environ['XDG_CONFIG_DIRS'] += f':{td}'
+
+            self.assertEqual(
+                main(['--destructive',
+                      '--root', td, '--debug', '--no-mount']),
+                0)
+            self.assert_kernels(Path(td),
+                                k122=False,
+                                k124=False)
+
+    def test_config_file_user(self) -> None:
+        with self.create_layout() as td:
+            path = Path(td)
+            os.mkdir(path / 'system')
+            with open(path / 'system/eclean-kernel.rc', 'w') as f:
+                f.write('-n 1\n')
+            with open(path / 'eclean-kernel.rc', 'w') as f:
+                f.write('-n "2"\n')
+            os.environ['XDG_CONFIG_DIRS'] = str(path / 'system')
+            os.environ['XDG_CONFIG_HOME'] = td
+
+            self.assertEqual(
+                main(['--destructive',
+                      '--root', td, '--debug', '--no-mount']),
+                0)
+            self.assert_kernels(Path(td),
+                                k122=False,
+                                k124=False)

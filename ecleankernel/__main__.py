@@ -136,9 +136,13 @@ def main(argv: typing.List[str]) -> int:
     config_dirs.insert(0, os.environ.get('XDG_CONFIG_HOME', '~/.config'))
     for x in reversed(config_dirs):
         try:
-            f = open(Path.home() / 'eclean-kernel.rc', 'r')
-            all_args.extend(shlex.split(f.read(), comments=True))
+            with open(Path(os.path.expanduser(x)) / 'eclean-kernel.rc',
+                      'r') as f:
+                all_args.extend(shlex.split(f.read(), comments=True))
         except FileNotFoundError:
+            pass
+        except NotADirectoryError:
+            # XDG_CONFIG_* does not have to be correct
             pass
 
     all_args.extend(argv)
