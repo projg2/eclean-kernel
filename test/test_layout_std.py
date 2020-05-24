@@ -108,11 +108,18 @@ class StdLayoutTests(unittest.TestCase):
             'boot/System.map-1.2.2': k122,
             'boot/config-1.2.4': k124,
             'lib/modules/1.2.2/test.ko': k122,
+            'lib/modules/1.2.2': k122,
             'lib/modules/1.2.3/test.ko': k123 or k123old,
+            'lib/modules/1.2.3': k123 or k123old,
             'lib/modules/1.2.4/test.ko': k124,
+            'lib/modules/1.2.4': k124,
+            'lib/modules': True,
             'usr/src/linux/Makefile': k122 or k123 or k123old,
+            'usr/src/linux': k122 or k123 or k123old,
+            'usr/src': True,
             'boot/System.map': stray,
             'boot/config-': stray,
+            'boot': True,
         }
         expected_files = [f for f, exp in files.items() if exp]
         found_files = [f for f in files if (root / f).exists()]

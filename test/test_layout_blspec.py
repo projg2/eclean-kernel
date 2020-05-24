@@ -70,19 +70,31 @@ class BlSpecLayoutTests(unittest.TestCase):
         subdir = 'EFI/' if efi_subdir else ''
         files = {
             f'boot/{subdir}{self.machine_id}/1.2.4/initrd': k124,
+            f'boot/{subdir}{self.machine_id}/1.2.4': k124,
             f'boot/{subdir}{self.machine_id}/1.2.3/initrd': k123,
             f'boot/{subdir}{self.machine_id}/1.2.3/linux': k123,
             f'boot/{subdir}{self.machine_id}/1.2.3/misc': k123,
+            f'boot/{subdir}{self.machine_id}/1.2.3': k123,
             f'boot/{subdir}{self.machine_id}/1.2.2/initrd': k122,
             f'boot/{subdir}{self.machine_id}/1.2.2/linux': k122,
+            f'boot/{subdir}{self.machine_id}/1.2.2': k122,
             f'boot/{subdir}{self.machine_id}/1.2.1/initrd': k121,
             f'boot/{subdir}{self.machine_id}/1.2.1/linux': k121,
+            f'boot/{subdir}{self.machine_id}/1.2.1': k121,
+            f'boot/{subdir}{self.machine_id}': True,
             'etc/machine-id': True,
             'lib/modules/1.2.4/test.ko': k124,
+            'lib/modules/1.2.4': k124,
             'lib/modules/1.2.3/test.ko': k123,
+            'lib/modules/1.2.3': k123,
             'lib/modules/1.2.2/test.ko': k122,
+            'lib/modules/1.2.2': k122,
             'lib/modules/1.2.1/test.ko': k121,
+            'lib/modules/1.2.1': k121,
+            'lib/modules': True,
             'usr/src/linux/Makefile': k123 or k122,
+            'usr/src/linux': k123 or k122,
+            'usr/src': True,
         }
         expected_files = [f for f, exp in files.items() if exp]
         found_files = [f for f in files if (root / f).exists()]
