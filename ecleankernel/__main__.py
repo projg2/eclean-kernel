@@ -7,7 +7,6 @@ import logging
 import os
 import os.path
 import shlex
-import shutil
 import subprocess
 import sys
 import time
@@ -308,10 +307,7 @@ def main(argv: typing.List[str]) -> int:
                             sign = '-'
                             if kf.path in files:
                                 try:
-                                    if os.path.isdir(kf.path):
-                                        shutil.rmtree(kf.path)
-                                    else:
-                                        os.unlink(kf.path)
+                                    sign = '-' if kf.remove() else '+'
                                 except FileNotFoundError:
                                     sign = 'x'
                         else:

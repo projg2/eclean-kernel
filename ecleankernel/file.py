@@ -4,6 +4,7 @@
 
 import enum
 import os
+import shutil
 import struct
 
 from pathlib import Path
@@ -36,6 +37,20 @@ class GenericFile(object):
                  ) -> None:
         self.path = path
         self.ftype = ftype
+
+    def remove(self) -> bool:
+        """
+        Remove this file
+
+        Call an appropriate removal function for this file.  Return True
+        if it was successfully removed, False if it was kept.  Raise
+        FileNotFoundError if it were not found (which is fine).
+        """
+        if os.path.isdir(self.path):
+            shutil.rmtree(self.path)
+        else:
+            os.unlink(self.path)
+        return True
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, GenericFile):
