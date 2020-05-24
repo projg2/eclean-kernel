@@ -186,7 +186,7 @@ def main(argv: typing.List[str]) -> int:
     except ImportError:
         logging.debug('unable to import pymountboot, /boot mounting disabled.')
     else:
-        if args.mount:
+        if not args.no_mount:
             bootfs = pymountboot.BootMountpoint()
 
     try:
