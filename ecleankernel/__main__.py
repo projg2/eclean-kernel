@@ -236,7 +236,16 @@ def main(argv: typing.List[str]) -> int:
 
             if not removals:
                 print('No outdated kernels found.')
-            elif args.pretend:
+                return 0
+
+            print('Legend:')
+            print('[-] file being removed')
+            if not args.pretend:
+                print('[x] file does not exist (anymore)')
+            print('[+] file being kept (used by other kernels')
+            print()
+
+            if args.pretend:
                 print('These are the kernels which would be removed:')
 
                 file_removals = list(
