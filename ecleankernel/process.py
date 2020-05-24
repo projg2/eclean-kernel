@@ -85,9 +85,8 @@ def get_removal_list(kernels: typing.List[Kernel],
     if limit is None or limit > 0:
         if not destructive:
             if bootloader is None:
-                raise SystemError('Unable to get kernels from'
-                                  + ' bootloader config (%s)'
-                                  % bootloader)
+                raise SystemError(f'Unable to get kernels from'
+                                  f' bootloader config ({bootloader})')
 
             used_paths = bootloader()
 
@@ -97,15 +96,15 @@ def get_removal_list(kernels: typing.List[Kernel],
             def unprefixify(filenames):
                 for fn in filenames:
                     if not os.path.exists(fn):
-                        print(
-                            'Note: referenced kernel does not exist: %s' %
-                            fn)
+                        print(f'Note: referenced kernel does not '
+                              f'exist: {fn}')
                     else:
                         kv, numsubs = prefix.subn('', fn)
                         if numsubs == 1:
                             yield kv
                         elif not ignored.match(fn):
-                            print('Note: strangely named used kernel: %s' % fn)
+                            print(f'Note: strangely named used kernel: '
+                                  f'{fn}')
 
             used = frozenset(unprefixify(used_paths))
 
@@ -124,8 +123,7 @@ def get_removal_list(kernels: typing.List[Kernel],
             elif k.version not in used:
                 assert bootloader is not None
                 remove_kernels.setdefault(k, []).append(
-                    'not referenced by bootloader (%s)'
-                    % bootloader.name)
+                    f'not referenced by bootloader ({bootloader.name})')
 
     current = os.uname()[2]
 

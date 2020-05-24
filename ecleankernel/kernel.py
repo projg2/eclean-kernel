@@ -11,20 +11,20 @@ from ecleankernel.file import GenericFile, KernelImage
 
 class WriteAccessError(Exception):
     def __init__(self, path):
-        self._path = path
+        self.path = path
         Exception.__init__(
-            self, '%s not writable, refusing to proceed.' % path)
+            self, f'{path} not writable, refusing to proceed.')
 
     @property
     def friendly_desc(self):
-        return '''The following file is not writable:
-  %s
+        return f'''The following file is not writable:
+  {self.path}
 
 This usually indicates that you have insufficient permissions to run
 eclean-kernel. The program needs to be able to remove all the files
 associated with removed kernels. Lack of write access to some of them
 will result in orphan files and therefore the program will refuse
-to proceed.''' % self._path
+to proceed.'''
 
 
 class Kernel(object):

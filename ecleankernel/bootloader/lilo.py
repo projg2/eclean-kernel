@@ -2,7 +2,6 @@
 # (c) 2011-2020 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
-import errno
 import logging
 import re
 import typing
@@ -29,9 +28,8 @@ class LILO(object):
                     self.path = p
                     self._content = f.read()
                     break
-            except IOError as e:
-                if e.errno != errno.ENOENT:
-                    raise
+            except FileNotFoundError:
+                pass
         else:
             raise BootloaderNotFound()
 

@@ -14,6 +14,6 @@ class Symlinks(object):
     def __call__(self):
         for fn in ('vmlinuz', 'vmlinux', 'kernel', 'bzImage'):
             for suffix in ('', '.old'):
-                f = '/boot/%s%s' % (fn, suffix)
+                f = f'/boot/{fn}{suffix}'
                 if os.path.exists(f):
                     yield f

@@ -6,7 +6,6 @@ import argparse
 import logging
 import os
 import os.path
-import errno
 import shlex
 import shutil
 import subprocess
@@ -137,12 +136,10 @@ def main(argv):
     config_dirs.insert(0, os.environ.get('XDG_CONFIG_HOME', '~/.config'))
     for x in reversed(config_dirs):
         try:
-            f = open('%s/eclean-kernel.rc' % os.path.expanduser(x), 'r')
-        except IOError as e:
-            if e.errno != errno.ENOENT:
-                raise
-        else:
+            f = open(Path.home() / 'eclean-kernel.rc', 'r')
             all_args.extend(shlex.split(f.read(), comments=True))
+        except FileNotFoundError:
+            pass
 
     all_args.extend(argv)
     args = argp.parse_args(all_args)
@@ -152,7 +149,7 @@ def main(argv):
         if not x:
             continue
         elif x not in kernel_parts:
-            argp.error('Invalid kernel part: %s' % x)
+            argp.error(f'Invalid kernel part: {x}')
         elif x == 'vmlinuz':
             argp.error('Kernel exclusion unsupported')
         exclusions.append(KernelFileType(x))
@@ -245,7 +242,7 @@ def main(argv):
                     get_removable_files(removals, kernels))
 
                 for k, reason, files in file_removals:
-                    print('- %s: %s' % (k.version, ', '.join(reason)))
+                    print(f'- {k.version}: {", ".join(reason)}')
                     for f in k.all_files:
                         if f.path in files:
                             sign = '-'
@@ -253,8 +250,8 @@ def main(argv):
                             sign = '+'
                         print(f' [{sign}] {f.path}')
                 if has_kernel_install:
-                    print('kernel-install will be called to perform'
-                          + ' prerm tasks.')
+                    print('kernel-install will be called to perform '
+                          'prerm tasks.')
                 if has_bootloader_postrm:
                     print(f'Bootloader {bootloader.name} config will '
                           f'be updated.')
@@ -272,22 +269,23 @@ def main(argv):
                         except NameError:
                             input_f = input
 
-                        ans = input_f('Remove %s (%s)? [Yes/No]'
-                                      % (k.version, ', '.join(reason))).lower()
+                        ans = input_f(f'Remove {k.version} '
+                                      f'({", ".join(reason)})? [Yes/No]'
+                                      ).lower()
                         if 'yes'.startswith(ans):
                             break
                         elif 'no'.startswith(ans):
                             del removals[k]
                             break
                         else:
-                            print('Invalid answer (%s).' % ans)
+                            print(f'Unknown answer ({ans}).')
 
                 file_removals = list(
                     get_removable_files(removals, kernels))
 
                 for k, reason, files in file_removals:
-                    print('* Removing kernel %s (%s)' %
-                          (k.version, ', '.join(reason)))
+                    print(f'* Removing kernel {k.version} '
+                          f'({", ".join(reason)})')
 
                     if has_kernel_install:
                         cmd = ['kernel-install', 'remove']
@@ -297,8 +295,8 @@ def main(argv):
                                               str(kf.path)]
                                 p = subprocess.Popen(scmd)
                                 if p.wait() != 0:
-                                    print('* kernel-install exited with'
-                                          + '%d status' % p.returncode)
+                                    print(f'* kernel-install exited '
+                                          f'with {p.returncode} status')
 
                     for f in k.all_files:
                         if f.path in files:
@@ -317,7 +315,7 @@ def main(argv):
                     nremoved += 1
 
                 if nremoved:
-                    print('Removed %d kernels' % nremoved)
+                    print(f'Removed {nremoved} kernels')
                     if has_bootloader_postrm:
                         bootloader.postrm()
 
@@ -335,7 +333,7 @@ def main(argv):
         if hasattr(e, 'friendly_desc'):
             print(e.friendly_desc)
         else:
-            print('  %r' % e)
+            print(f'  {e!r}')
 
         print('''
 If you believe that the mentioned issue is a bug, please report it

@@ -2,7 +2,6 @@
 # (c) 2011-2020 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
-import errno
 import logging
 import subprocess
 
@@ -33,8 +32,7 @@ class GRUB2(GRUB):
             logging.debug('Calling grub2-mkconfig')
             try:
                 subprocess.call(['grub-mkconfig', '-o', self.path])
-            except OSError as e:
-                if e.errno != errno.ENOENT:
-                    raise
+            except FileNotFoundError:
+                pass
             else:
                 subprocess.call(['grub2-mkconfig', '-o', self.path])
