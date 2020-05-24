@@ -53,38 +53,28 @@ options, so the latter will override them.
 Fiding and mapping kernels
 --------------------------
 
-The first task performed by eclean-kernel is finding all currently installed
-kernels and matching auxiliary files to them. In order to do that, eclean-kernel
-first looks for files named in the form of::
+eclean-kernel supports two distinct /boot layouts: the bootloader spec
+layout (gummiboot / systemd-boot) and the legacy /boot layout.
+The former is used if ``/boot/MACHINE-ID`` or ``/boot/EFI/MACHINE-ID``
+are found, otherwise the latter is used.
 
-	/boot/PREFIX-VERSION
+The bootloader spec layout uses subdirectories of ``/boot/MACHINE-ID``
+named after kernel versions. It expects the kernel to be named
+``linux``, and initramfs to be named ``initrd``. However, it collects
+arbitrary files in that directory as well.
 
-where *PREFIX* is one of the predefined file prefixes representing the file
-type, and *VERSION* is a free-form string following it (preferably the kernel
-version).
+The legacy layout scans all files directly in ``/boot`` directory
+that are named as ``PREFIX-VERSION``. Files recognized as bzImages
+can have any prefix, other files use a predefined list of prefixes.
 
-Right now, eclean-kernel supports the following prefixes:
+In both layouts, eclean-kernel looks for kernel modules
+in ``/lib/modules/REALVERSION`` where *REALVERSION* corresponds to
+the actual kernel version string used by the kernel itself. It is read
+from kernel image and it is assumed to be equal to *VERSION* for libdirs
+unmatched to any kernel image.
 
-- ``vmlinuz``, ``vmlinux``, ``kernel`` and ``bzImage`` for kernel files,
-- ``System.map`` for system.map file,
-- ``config`` for kernel configuration.
-
-In case support for additional prefixes is needed, feel free to report a bug.
-
-Files belonging to the same kernel are grouped using the *VERSION* part, e.g. it
-is assumed that ``System.map-X.Y.Z`` corresponds to ``vmlinuz-X.Y.Z``.
-
-In addition to that, eclean-kernel looks for kernel modules in::
-
-	/lib/modules/REALVERSION
-
-where *REALVERSION* corresponds to the actual kernel version string used
-by the kernel itself. It is read from kernel image itself and it is assumed to
-be equal to *VERSION* for libdirs unmatched to any kernel image.
-
-In other words, genkernel-generated ``kernel-genkernel-ARCH-X.Y.Z`` will be
-matched to ``System.map-genkernel-ARCH-X.Y.Z`` but also
-to ``/lib/modules/X.Y.Z``.
+In other words, genkernel-generated ``kernel-genkernel-ARCH-X.Y.Z`` will
+match ``System.map-genkernel-ARCH-X.Y.Z`` and ``/lib/modules/X.Y.Z``.
 
 
 Choosing kernels to remove
