@@ -48,10 +48,7 @@ class GenericFile(object):
         if it was successfully removed, False if it was kept.  Raise
         FileNotFoundError if it were not found (which is fine).
         """
-        if os.path.isdir(self.path):
-            shutil.rmtree(self.path)
-        else:
-            os.unlink(self.path)
+        os.unlink(self.path)
         return True
 
     def __eq__(self, other: object) -> bool:
@@ -61,6 +58,25 @@ class GenericFile(object):
 
     def __repr__(self) -> str:
         return (f'GenericFile({repr(self.path)}, '
+                f'KernelFileType.{repr(self.ftype.name)})')
+
+
+class GenericDirectory(GenericFile):
+    """A subclass of `GenericFile` for directories"""
+
+    def remove(self) -> bool:
+        """
+        Remove this file
+
+        Call an appropriate removal function for this file.  Return True
+        if it was successfully removed, False if it was kept.  Raise
+        FileNotFoundError if it were not found (which is fine).
+        """
+        shutil.rmtree(self.path)
+        return True
+
+    def __repr__(self) -> str:
+        return (f'GenericDirectory({repr(self.path)}, '
                 f'KernelFileType.{repr(self.ftype.name)})')
 
 
@@ -102,7 +118,7 @@ class KernelImage(GenericFile):
         return (f'KernelImage({repr(self.path)})')
 
 
-class ModuleDirectory(GenericFile):
+class ModuleDirectory(GenericDirectory):
     """A kernel module collection directory"""
 
     def __init__(self,

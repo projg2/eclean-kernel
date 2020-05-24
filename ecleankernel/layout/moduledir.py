@@ -10,6 +10,7 @@ from pathlib import Path
 from ecleankernel.file import (
     KernelFileType,
     GenericFile,
+    GenericDirectory,
     ModuleDirectory,
     )
 from ecleankernel.layout import Layout
@@ -42,8 +43,8 @@ class ModuleDirLayout(Layout):
                     try:
                         build = mobj.get_build_dir()
                         if build.is_dir():
-                            mlist.append(GenericFile(build,
-                                                     KernelFileType.BUILD))
+                            mlist.append(GenericDirectory(
+                                build, KernelFileType.BUILD))
                     except FileNotFoundError:
                         pass
 
