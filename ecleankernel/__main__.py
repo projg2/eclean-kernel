@@ -117,6 +117,15 @@ def main(argv):
     group.add_argument('-M', '--no-mount',
                        action='store_false',
                        help='Disable (re-)mounting /boot if necessary')
+    group.add_argument('--no-bootloader-update',
+                       action='store_true',
+                       help='Do not update bootloader configuration '
+                            'after removing kernels (if supported '
+                            'by the bootloader')
+    group.add_argument('--no-kernel-install',
+                       action='store_true',
+                       help='Do not call kernel-install while removing '
+                            'kernels (if installed)')
     group.add_argument('-x', '--exclude',
                        default='',
                        help=f'Exclude kernel parts from being removed '
@@ -211,16 +220,21 @@ def main(argv):
                 destructive=args.destructive)
 
             has_kernel_install = False
+            has_bootloader_postrm = False
             if args.root == Path('/'):
-                try:
-                    subprocess.Popen(['kernel-install', '--help'],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE).communicate()
-                except OSError as e:
-                    if e.errno != errno.ENOENT:
-                        raise
-                else:
-                    has_kernel_install = True
+                if not args.no_kernel_install:
+                    try:
+                        (subprocess.Popen(['kernel-install', '--help'],
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE)
+                                   .communicate())
+                        has_kernel_install = True
+                    except FileNotFoundError:
+                        pass
+
+                if not args.no_bootloader_update and hasattr(bootloader,
+                                                             'postrm'):
+                    has_bootloader_postrm = True
 
             if not removals:
                 print('No outdated kernels found.')
@@ -241,10 +255,9 @@ def main(argv):
                 if has_kernel_install:
                     print('kernel-install will be called to perform'
                           + ' prerm tasks.')
-                if args.root == Path('/'):
-                    if hasattr(bootloader, 'postrm'):
-                        print('Bootloader %s config will be updated.' %
-                              bootloader.name)
+                if has_bootloader_postrm:
+                    print(f'Bootloader {bootloader.name} config will '
+                          f'be updated.')
             else:
                 bootfs.rwmount()
                 for k in removals:
@@ -305,9 +318,8 @@ def main(argv):
 
                 if nremoved:
                     print('Removed %d kernels' % nremoved)
-                    if args.root == Path('/'):
-                        if hasattr(bootloader, 'postrm'):
-                            bootloader.postrm()
+                    if has_bootloader_postrm:
+                        bootloader.postrm()
 
             return 0
         finally:
