@@ -61,7 +61,10 @@ class BlSpecLayout(ModuleDirLayout):
                      root: Path = Path('/')
                      ) -> typing.List[Kernel]:
         boot_subdir = self.get_boot_subdir(root)
-        assert boot_subdir is not None
+        if boot_subdir is None:
+            raise SystemError(
+                'Kernel directory for current machine not found '
+                'in /boot or /boot/EFI')
 
         # this would wreak havok all around the place
         assert KernelFileType.KERNEL not in exclusions

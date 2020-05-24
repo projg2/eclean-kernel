@@ -405,3 +405,10 @@ class StdLayoutTests(unittest.TestCase):
                       '--root', td, '--debug', '--no-mount']),
                 0)
             self.assert_kernels(Path(td))
+
+    def test_wrong_layout_blspec(self) -> None:
+        with self.create_layout() as td:
+            with self.assertRaises(SystemError):
+                main(['--destructive', '-n', '2', '--pretend',
+                      '--layout', 'blspec',
+                      '--root', td, '--debug', '--no-mount'])
