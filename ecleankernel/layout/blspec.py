@@ -12,6 +12,7 @@ from ecleankernel.file import (
     GenericFile,
     KernelImage,
     UnrecognizedKernelError,
+    EmptyDirectory,
     )
 from ecleankernel.kernel import Kernel
 from ecleankernel.layout.moduledir import ModuleDirLayout
@@ -81,6 +82,8 @@ class BlSpecLayout(ModuleDirLayout):
 
             k = Kernel(ver)
             for fn in os.listdir(dir_path):
+                if fn.startswith('.'):
+                    continue
                 path = dir_path / fn
                 ftype = self.name_map.get(fn, KernelFileType.MISC)
                 fobj = GenericFile(path, ftype)
@@ -96,6 +99,7 @@ class BlSpecLayout(ModuleDirLayout):
                         fobj = kobj
                 if ftype not in exclusions:
                     k.all_files.append(fobj)
+            k.all_files.append(EmptyDirectory(dir_path))
             kernels[ver] = k
 
         # merge unassociated modules into kernel groups

@@ -3,6 +3,7 @@
 # Released under the terms of the 2-clause BSD license.
 
 import enum
+import errno
 import os
 import shutil
 import struct
@@ -19,6 +20,7 @@ class KernelFileType(enum.Enum):
     MODULES = 'modules'
     BUILD = 'build'
     MISC = 'misc'
+    EMPTYDIR = 'emptydir'
 
 
 class UnrecognizedKernelError(Exception):
@@ -113,3 +115,24 @@ class ModuleDirectory(GenericFile):
 
     def __repr__(self) -> str:
         return (f'ModuleDirectory({repr(self.path)})')
+
+
+class EmptyDirectory(GenericFile):
+    """A parent directory that is removed if it is empty"""
+
+    def __init__(self,
+                 path: Path
+                 ) -> None:
+        super().__init__(path, KernelFileType.EMPTYDIR)
+
+    def remove(self) -> bool:
+        try:
+            os.rmdir(self.path)
+        except OSError as e:
+            if e.errno in (errno.EEXIST, errno.ENOTEMPTY):
+                return False
+            raise
+        return True
+
+    def __repr__(self) -> str:
+        return (f'EmptyDirectory({repr(self.path)})')
