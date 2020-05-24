@@ -12,11 +12,7 @@ from ecleankernel.kernel import Kernel
 class KernelSort(abc.ABC):
     """Abstract sorter class"""
 
-    @property
-    @abc.abstractmethod
-    def name(self):
-        """Sorter name"""
-        pass
+    name: str
 
     @abc.abstractmethod
     def key(self,

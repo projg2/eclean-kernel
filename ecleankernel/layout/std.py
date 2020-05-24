@@ -54,21 +54,12 @@ class StdLayout(ModuleDirLayout):
     @staticmethod
     def is_acceptable(root: Path = Path('/')
                       ) -> bool:
-        """Return true (this layout is fallback)"""
         return True
 
     def find_kernels(self,
                      exclusions: typing.Container[KernelFileType] = [],
                      root: Path = Path('/')
                      ) -> typing.List[Kernel]:
-        """
-        Find all files and directories related to installed kernels
-
-        Find all kernel files and related data and return a list
-        of `Kernel` objects.  `exclusions` specifies kernel parts
-        to ignore.  `root` specifies the root directory to use.
-        """
-
         # this would wreak havok all around the place
         assert KernelFileType.KERNEL not in exclusions
 

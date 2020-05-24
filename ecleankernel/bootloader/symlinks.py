@@ -3,15 +3,18 @@
 # Released under the terms of the 2-clause BSD license.
 
 import os.path
+import typing
 
 
 class Symlinks(object):
     name = 'symlinks'
 
-    def __init__(self, path=None):
+    def __init__(self,
+                 path: typing.Optional[str] = None
+                 ) -> None:
         pass
 
-    def __call__(self):
+    def __call__(self) -> typing.Iterable[str]:
         for fn in ('vmlinuz', 'vmlinux', 'kernel', 'bzImage'):
             for suffix in ('', '.old'):
                 f = f'/boot/{fn}{suffix}'

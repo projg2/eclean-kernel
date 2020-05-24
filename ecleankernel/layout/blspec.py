@@ -53,21 +53,12 @@ class BlSpecLayout(ModuleDirLayout):
     def is_acceptable(self,
                       root: Path = Path('/')
                       ) -> bool:
-        """Return True if system looks to be using this layout"""
         return self.get_boot_subdir(root) is not None
 
     def find_kernels(self,
                      exclusions: typing.Container[KernelFileType] = [],
                      root: Path = Path('/')
                      ) -> typing.List[Kernel]:
-        """
-        Find all files and directories related to installed kernels
-
-        Find all kernel files and related data and return a list
-        of `Kernel` objects.  `exclusions` specifies kernel parts
-        to ignore.  `root` specifies the root directory to use.
-        """
-
         boot_subdir = self.get_boot_subdir(root)
         assert boot_subdir is not None
 

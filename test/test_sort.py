@@ -15,7 +15,7 @@ from ecleankernel.sort import VersionSort, MTimeSort
 
 
 class SortTests(unittest.TestCase):
-    def test_version(self):
+    def test_version(self) -> None:
         vs = VersionSort()
         self.assertEqual(
             sorted([Kernel('4.14.0'),
@@ -45,7 +45,7 @@ class SortTests(unittest.TestCase):
              Kernel('5.7.0-foo-rc3'),
              ])
 
-    def test_mtime(self):
+    def test_mtime(self) -> None:
         ms = MTimeSort()
         with tempfile.TemporaryDirectory() as td_name:
             td = Path(td_name)

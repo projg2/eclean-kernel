@@ -12,9 +12,10 @@ from ecleankernel.file import (
     GenericFile,
     ModuleDirectory,
     )
+from ecleankernel.layout import Layout
 
 
-class ModuleDirLayout(object):
+class ModuleDirLayout(Layout):
     """A common class for layouts using a module-dir"""
 
     def get_module_dict(self,

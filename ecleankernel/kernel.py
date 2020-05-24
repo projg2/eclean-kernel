@@ -6,17 +6,21 @@ import os
 import os.path
 import typing
 
+from pathlib import Path
+
 from ecleankernel.file import GenericFile, KernelImage
 
 
 class WriteAccessError(Exception):
-    def __init__(self, path):
+    def __init__(self,
+                 path: Path
+                 ) -> None:
         self.path = path
         Exception.__init__(
             self, f'{path} not writable, refusing to proceed.')
 
     @property
-    def friendly_desc(self):
+    def friendly_desc(self) -> str:
         return f'''The following file is not writable:
   {self.path}
 
@@ -66,9 +70,8 @@ class Kernel(object):
         return (self.version == other.version
                 and self.all_files == other.all_files)
 
-    def __hash__(self
-                 ) -> int:
+    def __hash__(self) -> int:
         return hash(self.version)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'Kernel({repr(self.version)})'

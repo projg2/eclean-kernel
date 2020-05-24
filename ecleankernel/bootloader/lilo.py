@@ -14,7 +14,9 @@ class LILO(object):
     kernel_re = r'^\s*image\s*=\s*(?P<path>.+)\s*$'
     def_path: typing.Tuple[str, ...] = ('/etc/lilo.conf',)
 
-    def __init__(self, path=None):
+    def __init__(self,
+                 path: typing.Optional[str] = None
+                 ) -> None:
         self._kernel_re = re.compile(self.kernel_re,
                                      re.MULTILINE | re.IGNORECASE)
         paths = path or self.def_path
@@ -33,7 +35,9 @@ class LILO(object):
         else:
             raise BootloaderNotFound()
 
-    def _get_kernels(self, content):
+    def _get_kernels(self,
+                     content: str
+                     ) -> typing.Iterable[str]:
         logging.debug('matching...')
         for m in self._kernel_re.finditer(content):
             path = m.group('path')
@@ -41,5 +45,5 @@ class LILO(object):
             logging.debug(f'    from line: {m.group(0)}')
             yield path
 
-    def __call__(self):
+    def __call__(self) -> typing.Iterable[str]:
         return self._get_kernels(self._content)

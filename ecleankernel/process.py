@@ -59,7 +59,7 @@ def remove_stray(kernels: typing.Iterable[Kernel]
 
 def get_removal_list(kernels: typing.List[Kernel],
                      sorter: KernelSort,
-                     limit: int = 0,
+                     limit: typing.Optional[int] = 0,
                      bootloader: typing.Optional[typing.Any] = None,
                      destructive: bool = False
                      ) -> RemovableKernelDict:
@@ -93,7 +93,8 @@ def get_removal_list(kernels: typing.List[Kernel],
             prefix = re.compile(r'^/boot/(vmlinu[xz]|kernel|bzImage)-')
             ignored = re.compile(r'^/boot/xen')
 
-            def unprefixify(filenames):
+            def unprefixify(filenames: typing.Iterable[str]
+                            ) -> typing.Iterable[str]:
                 for fn in filenames:
                     if not os.path.exists(fn):
                         print(f'Note: referenced kernel does not '

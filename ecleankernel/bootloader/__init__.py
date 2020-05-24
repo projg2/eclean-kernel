@@ -3,6 +3,7 @@
 # Released under the terms of the 2-clause BSD license.
 
 import logging
+import typing
 
 from ecleankernel.bootloader.common import BootloaderNotFound
 from ecleankernel.bootloader.grub import GRUB
@@ -11,10 +12,13 @@ from ecleankernel.bootloader.lilo import LILO
 from ecleankernel.bootloader.yaboot import Yaboot
 from ecleankernel.bootloader.symlinks import Symlinks
 
-bootloaders = (LILO, GRUB2, GRUB, Yaboot, Symlinks)
+bootloaders: typing.List[typing.Any] = [
+    LILO, GRUB2, GRUB, Yaboot, Symlinks]
 
 
-def get_bootloader(requested=None):
+# TODO: proper typing
+def get_bootloader(requested: typing.Optional[str] = None
+                   ) -> typing.Any:
     for bl in bootloaders:
         if requested in ('auto', bl.name):
             logging.debug(f'Trying bootloader {bl.name}')

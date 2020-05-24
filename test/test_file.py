@@ -25,34 +25,34 @@ def write_bzImage(path: Path,
 
 
 class KernelImageTests(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.td = tempfile.TemporaryDirectory()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.td.cleanup()
 
-    def test_read_internal_version(self):
+    def test_read_internal_version(self) -> None:
         path = Path(self.td.name) / 'vmlinuz'
         write_bzImage(path, b'1.2.3 built on test')
         self.assertEqual(
             KernelImage(path).read_internal_version(),
             '1.2.3')
 
-    def test_very_short(self):
+    def test_very_short(self) -> None:
         path = Path(self.td.name) / 'vmlinuz'
         with open(path, 'wb') as f:
             f.write(10 * b'\0')
         with self.assertRaises(UnrecognizedKernelError):
             KernelImage(path).read_internal_version()
 
-    def test_bad_magic(self):
+    def test_bad_magic(self) -> None:
         path = Path(self.td.name) / 'vmlinuz'
         with open(path, 'wb') as f:
             f.write(0x210 * b'\0')
         with self.assertRaises(UnrecognizedKernelError):
             KernelImage(path).read_internal_version()
 
-    def test_short(self):
+    def test_short(self) -> None:
         path = Path(self.td.name) / 'vmlinuz'
         with open(path, 'wb') as f:
             f.write(0x202 * b'\0')
@@ -64,13 +64,13 @@ class KernelImageTests(unittest.TestCase):
 
 
 class ModuleDirectoryTests(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.td = tempfile.TemporaryDirectory()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.td.cleanup()
 
-    def test_abs_symlink(self):
+    def test_abs_symlink(self) -> None:
         td = Path(self.td.name)
         mdir = td / 'modules/1.2.3'
         os.makedirs(mdir)
@@ -81,7 +81,7 @@ class ModuleDirectoryTests(unittest.TestCase):
             ModuleDirectory(mdir).get_build_dir(),
             td / 'src/linux')
 
-    def test_rel_symlink(self):
+    def test_rel_symlink(self) -> None:
         td = Path(self.td.name)
         mdir = td / 'modules/1.2.3'
         os.makedirs(mdir)

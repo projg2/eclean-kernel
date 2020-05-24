@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import time
+import typing
 
 from pathlib import Path
 
@@ -29,22 +30,22 @@ or only those which are referenced by a bootloader (with -a).
 
 
 class DummyMount(object):
-    def mount(self):
+    def mount(self) -> None:
         pass
 
-    def rwmount(self):
+    def rwmount(self) -> None:
         pass
 
-    def umount(self):
+    def umount(self) -> None:
         pass
 
 
 class MountError(Exception):
-    def __init__(self):
+    def __init__(self) -> None:
         Exception.__init__(self, 'Unable to mount /boot')
 
     @property
-    def friendly_desc(self):
+    def friendly_desc(self) -> str:
         return '''The program is unable to mount /boot.
 
 This usually indicates that you have insufficient permissions to run
@@ -54,7 +55,7 @@ eclean-kernel will refuse to proceed. Please either run the program
 as root, or preferably mount /boot before using it.'''
 
 
-def main(argv):
+def main(argv: typing.List[str]) -> int:
     kernel_parts = [x.value for x in KernelFileType.__members__.values()]
     layouts = [BlSpecLayout, StdLayout]
     sorts = [MTimeSort, VersionSort]
@@ -201,8 +202,8 @@ def main(argv):
                                  reverse=True)
                 for k in ordered:
                     print(f'{k.version} [{k.real_kv}]')
-                    for f in sorted(k.all_files, key=lambda f: f.path):
-                        print(f'- {f.ftype.value}: {f.path}')
+                    for kf in sorted(k.all_files, key=lambda f: f.path):
+                        print(f'- {kf.ftype.value}: {kf.path}')
                     ts = time.strftime("%Y-%m-%d %H:%M:%S",
                                        time.gmtime(k.mtime))
                     print(f'- last modified: {ts}')
@@ -243,12 +244,12 @@ def main(argv):
 
                 for k, reason, files in file_removals:
                     print(f'- {k.version}: {", ".join(reason)}')
-                    for f in k.all_files:
-                        if f.path in files:
+                    for kf in k.all_files:
+                        if kf.path in files:
                             sign = '-'
                         else:
                             sign = '+'
-                        print(f' [{sign}] {f.path}')
+                        print(f' [{sign}] {kf.path}')
                 if has_kernel_install:
                     print('kernel-install will be called to perform '
                           'prerm tasks.')
@@ -264,14 +265,9 @@ def main(argv):
 
                 for k, reason in list(removals.items()):
                     while args.ask:
-                        try:
-                            input_f = raw_input
-                        except NameError:
-                            input_f = input
-
-                        ans = input_f(f'Remove {k.version} '
-                                      f'({", ".join(reason)})? [Yes/No]'
-                                      ).lower()
+                        ans = input(f'Remove {k.version} '
+                                    f'({", ".join(reason)})? [Yes/No]'
+                                    ).lower()
                         if 'yes'.startswith(ans):
                             break
                         elif 'no'.startswith(ans):
@@ -298,20 +294,20 @@ def main(argv):
                                     print(f'* kernel-install exited '
                                           f'with {p.returncode} status')
 
-                    for f in k.all_files:
-                        if f.path in files:
+                    for kf in k.all_files:
+                        if kf.path in files:
                             sign = '-'
-                            if f.path in files:
+                            if kf.path in files:
                                 try:
-                                    if os.path.isdir(f.path):
-                                        shutil.rmtree(f.path)
+                                    if os.path.isdir(kf.path):
+                                        shutil.rmtree(kf.path)
                                     else:
-                                        os.unlink(f.path)
+                                        os.unlink(kf.path)
                                 except FileNotFoundError:
                                     sign = 'x'
                         else:
                             sign = '+'
-                        print(f' [{sign}] {f.path}')
+                        print(f' [{sign}] {kf.path}')
                     nremoved += 1
 
                 if nremoved:
@@ -325,13 +321,14 @@ def main(argv):
                 bootfs.umount()
             except RuntimeError:
                 print('Note: unmounting /boot failed')
+        return 0
     except Exception as e:
         if args.debug:
             raise
         print('eclean-kernel has met the following issue:\n')
 
         if hasattr(e, 'friendly_desc'):
-            print(e.friendly_desc)
+            print(getattr(e, 'friendly_desc'))
         else:
             print(f'  {e!r}')
 
@@ -340,6 +337,7 @@ If you believe that the mentioned issue is a bug, please report it
 to https://github.com/mgorny/eclean-kernel/issues. If possible,
 please attach the output of 'eclean-kernel --list-kernels' and your
 regular eclean-kernel call with additional '--debug' argument.''')
+        return 1
 
 
 def setuptools_main() -> None:

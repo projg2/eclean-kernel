@@ -4,6 +4,7 @@
 
 import os
 import tempfile
+import typing
 import unittest
 
 from pathlib import Path
@@ -122,7 +123,7 @@ class KernelRemovalTests(unittest.TestCase):
         class MockBootloader(object):
             name = 'mock'
 
-            def __call__(self):
+            def __call__(self) -> typing.Iterable[str]:
                 yield str(td / 'does-not-exist')
                 yield str(td / 'kernel.old')
 
