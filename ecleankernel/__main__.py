@@ -15,11 +15,17 @@ import typing
 from pathlib import Path
 
 from ecleankernel import __version__
-from ecleankernel.bootloader import bootloaders, get_bootloader
+from ecleankernel.bootloader.common import BootloaderNotFound
 from ecleankernel.file import KernelImage, KernelFileType
+from ecleankernel.process import get_removal_list, get_removable_files
+
+from ecleankernel.bootloader.grub import GRUB
+from ecleankernel.bootloader.grub2 import GRUB2
+from ecleankernel.bootloader.lilo import LILO
+from ecleankernel.bootloader.yaboot import Yaboot
+from ecleankernel.bootloader.symlinks import Symlinks
 from ecleankernel.layout.blspec import BlSpecLayout
 from ecleankernel.layout.std import StdLayout
-from ecleankernel.process import get_removal_list, get_removable_files
 from ecleankernel.sort import MTimeSort, VersionSort
 
 ecleankern_desc = '''
@@ -56,6 +62,8 @@ as root, or preferably mount /boot before using it.'''
 
 def main(argv: typing.List[str]) -> int:
     kernel_parts = [x.value for x in KernelFileType.__members__.values()]
+    bootloaders: typing.List[typing.Any] = [
+        LILO, GRUB2, GRUB, Yaboot, Symlinks]
     layouts = [BlSpecLayout, StdLayout]
     sorts = [MTimeSort, VersionSort]
 
@@ -173,6 +181,19 @@ def main(argv: typing.List[str]) -> int:
         argp.error(f'Invalid layout: {args.layout}')
     layout = layout_cls()
 
+    # TODO: make it into a proper class
+    bootloader: typing.Any = None
+    for bootloader_cls in bootloaders:
+        if args.bootloader == 'auto':
+            try:
+                bootloader = bootloader_cls()
+                break
+            except BootloaderNotFound:
+                pass
+        elif args.bootloader == bootloader_cls.name:
+            bootloader = bootloader_cls()
+            break
+
     for sort_cls in sorts:
         if args.sort_order == sort_cls.name:
             break
@@ -212,7 +233,6 @@ def main(argv: typing.List[str]) -> int:
                     print(f'- last modified: {ts}')
                 return 0
 
-            bootloader = get_bootloader(requested=args.bootloader)
             removals = get_removal_list(
                 kernels,
                 limit=None if args.all else args.num,
