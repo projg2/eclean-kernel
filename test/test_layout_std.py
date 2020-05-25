@@ -138,7 +138,7 @@ class StdLayoutTests(unittest.TestCase):
 
             self.assertEqual(
                 sorted(kernel_paths(
-                    StdLayout().find_kernels(root=path))),
+                    StdLayout(root=path).find_kernels())),
                 [('1.2.2',
                   [GenericFile(boot / 'System.map-1.2.2', KFT.SYSTEM_MAP),
                    KernelImage(boot / 'vmlinuz-1.2.2'),
@@ -181,9 +181,8 @@ class StdLayoutTests(unittest.TestCase):
 
             self.assertEqual(
                 sorted(kernel_paths(
-                    StdLayout().find_kernels(
-                        exclusions=[KFT.CONFIG],
-                        root=path))),
+                    StdLayout(root=path).find_kernels(
+                        exclusions=[KFT.CONFIG]))),
                 [('1.2.2',
                   [GenericFile(boot / 'System.map-1.2.2', KFT.SYSTEM_MAP),
                    KernelImage(boot / 'vmlinuz-1.2.2'),
@@ -223,9 +222,8 @@ class StdLayoutTests(unittest.TestCase):
 
             self.assertEqual(
                 sorted(kernel_paths(
-                    StdLayout().find_kernels(
-                        exclusions=[KFT.MODULES],
-                        root=path))),
+                    StdLayout(root=path).find_kernels(
+                        exclusions=[KFT.MODULES]))),
                 [('1.2.2',
                   [GenericFile(boot / 'System.map-1.2.2', KFT.SYSTEM_MAP),
                    KernelImage(boot / 'vmlinuz-1.2.2'),
@@ -264,9 +262,8 @@ class StdLayoutTests(unittest.TestCase):
 
             self.assertEqual(
                 sorted(kernel_paths(
-                    StdLayout().find_kernels(
-                        exclusions=[KFT.BUILD],
-                        root=path))),
+                    StdLayout(root=path).find_kernels(
+                        exclusions=[KFT.BUILD]))),
                 [('1.2.2',
                   [GenericFile(boot / 'System.map-1.2.2', KFT.SYSTEM_MAP),
                    KernelImage(boot / 'vmlinuz-1.2.2'),
@@ -309,7 +306,7 @@ class StdLayoutTests(unittest.TestCase):
 
             self.assertEqual(
                 sorted(kernel_paths(
-                    StdLayout().find_kernels(root=path))),
+                    StdLayout(root=path).find_kernels())),
                 [('1.2.3',
                   [ModuleDirectory(modules / '1.2.3')
                    ],
@@ -413,10 +410,11 @@ class StdLayoutTests(unittest.TestCase):
 
     def test_wrong_layout_blspec(self) -> None:
         with self.create_layout() as td:
-            with self.assertRaises(SystemError):
+            with self.assertRaises(SystemExit) as e:
                 main(['--destructive', '-n', '2', '--pretend',
                       '--layout', 'blspec',
                       '--root', td, '--debug', '--no-mount'])
+            self.assertNotEqual(e.exception.code, 0)
 
     def test_config_file_system(self) -> None:
         with self.create_layout() as td:

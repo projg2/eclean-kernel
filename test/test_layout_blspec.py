@@ -16,6 +16,7 @@ from ecleankernel.file import (
     ModuleDirectory,
     EmptyDirectory,
     )
+from ecleankernel.layout import LayoutNotFound
 from ecleankernel.layout.blspec import BlSpecLayout
 
 from test.test_file import write_bzImage
@@ -114,13 +115,11 @@ class BlSpecLayoutTests(unittest.TestCase):
 
     def test_accept_plain(self) -> None:
         with self.create_layout() as td:
-            self.assertTrue(
-                BlSpecLayout.is_acceptable(root=Path(td)))
+            BlSpecLayout(root=Path(td))
 
     def test_accept_EFI(self) -> None:
         with self.create_layout(efi_subdir=True) as td:
-            self.assertTrue(
-                BlSpecLayout.is_acceptable(root=Path(td)))
+            BlSpecLayout(root=Path(td))
 
     def test_accept_no_boot(self) -> None:
         test_spec = [
@@ -132,8 +131,8 @@ class BlSpecLayoutTests(unittest.TestCase):
             with open(td / 'etc/machine-id', 'w') as f:
                 f.write(f'{self.machine_id}\n')
 
-            self.assertFalse(
-                BlSpecLayout.is_acceptable(root=td))
+            with self.assertRaises(LayoutNotFound):
+                BlSpecLayout(root=Path(td))
 
     def test_accept_no_machine_id(self) -> None:
         test_spec = [
@@ -142,8 +141,8 @@ class BlSpecLayoutTests(unittest.TestCase):
 
         with make_test_files(test_spec) as td_inst:
             td = Path(td_inst)
-            self.assertFalse(
-                BlSpecLayout.is_acceptable(root=td))
+            with self.assertRaises(LayoutNotFound):
+                BlSpecLayout(root=Path(td))
 
     def test_find_modules(self) -> None:
         with self.create_layout() as td:
@@ -153,8 +152,7 @@ class BlSpecLayoutTests(unittest.TestCase):
 
             self.assertEqual(
                 sorted(kernel_paths(
-                    BlSpecLayout().find_kernels(
-                        root=path))),
+                    BlSpecLayout(root=path).find_kernels())),
                 [('1.2.1',
                   [EmptyDirectory(boot / '1.2.1'),
                    GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
@@ -197,9 +195,8 @@ class BlSpecLayoutTests(unittest.TestCase):
 
             self.assertEqual(
                 sorted(kernel_paths(
-                    BlSpecLayout().find_kernels(
-                        exclusions=[KFT.MISC],
-                        root=path))),
+                    BlSpecLayout(root=path).find_kernels(
+                        exclusions=[KFT.MISC]))),
                 [('1.2.1',
                   [EmptyDirectory(boot / '1.2.1'),
                    GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
@@ -241,9 +238,8 @@ class BlSpecLayoutTests(unittest.TestCase):
 
             self.assertEqual(
                 sorted(kernel_paths(
-                    BlSpecLayout().find_kernels(
-                        exclusions=[KFT.MODULES],
-                        root=path))),
+                    BlSpecLayout(root=path).find_kernels(
+                        exclusions=[KFT.MODULES]))),
                 [('1.2.1',
                   [EmptyDirectory(boot / '1.2.1'),
                    GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
@@ -282,9 +278,8 @@ class BlSpecLayoutTests(unittest.TestCase):
 
             self.assertEqual(
                 sorted(kernel_paths(
-                    BlSpecLayout().find_kernels(
-                        exclusions=[KFT.BUILD],
-                        root=path))),
+                    BlSpecLayout(root=path).find_kernels(
+                        exclusions=[KFT.BUILD]))),
                 [('1.2.1',
                   [EmptyDirectory(boot / '1.2.1'),
                    GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
@@ -323,8 +318,7 @@ class BlSpecLayoutTests(unittest.TestCase):
 
             self.assertEqual(
                 sorted(kernel_paths(
-                    BlSpecLayout().find_kernels(
-                        root=path))),
+                    BlSpecLayout(root=path).find_kernels())),
                 [('1.2.1',
                   [EmptyDirectory(boot / '1.2.1'),
                    GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),

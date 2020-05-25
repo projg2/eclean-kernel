@@ -7,8 +7,6 @@ import os
 import os.path
 import typing
 
-from pathlib import Path
-
 from ecleankernel.file import (
     KernelFileType,
     GenericFile,
@@ -51,14 +49,8 @@ class StdLayout(ModuleDirLayout):
         '.xz',
     ]
 
-    @staticmethod
-    def is_acceptable(root: Path = Path('/')
-                      ) -> bool:
-        return True
-
     def find_kernels(self,
                      exclusions: typing.Container[KernelFileType] = [],
-                     root: Path = Path('/')
                      ) -> typing.List[Kernel]:
         # this would wreak havok all around the place
         assert KernelFileType.KERNEL not in exclusions
@@ -66,12 +58,12 @@ class StdLayout(ModuleDirLayout):
         # collect all module directories first
         module_dict = self.get_module_dict(
             exclusions=exclusions,
-            module_directory=root / 'lib/modules')
+            module_directory=self.root / 'lib/modules')
 
         # collect from /boot
         kernels: typing.Dict[str, typing.Dict[str, Kernel]] = {}
         other_files: typing.List[typing.Tuple[GenericFile, str]] = []
-        boot_directory = root / 'boot'
+        boot_directory = self.root / 'boot'
         try:
             diter = os.listdir(boot_directory)
         except FileNotFoundError:

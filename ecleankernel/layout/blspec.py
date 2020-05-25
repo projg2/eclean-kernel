@@ -15,6 +15,7 @@ from ecleankernel.file import (
     EmptyDirectory,
     )
 from ecleankernel.kernel import Kernel
+from ecleankernel.layout import LayoutNotFound
 from ecleankernel.layout.moduledir import ModuleDirLayout
 
 
@@ -34,52 +35,41 @@ class BlSpecLayout(ModuleDirLayout):
         'linux': KernelFileType.KERNEL,
     }
 
-    @classmethod
-    def get_boot_subdir(self,
-                        root: Path
-                        ) -> typing.Optional[Path]:
-        """Get the /boot subdirectory for current machine (or None)"""
+    def __init__(self,
+                 root: Path
+                 ) -> None:
+        super().__init__(root)
         try:
             with open(root / 'etc/machine-id') as f:
                 machine_id = f.read().strip()
             for d in self.potential_dirs:
-                bootdir = root / d / machine_id
-                if bootdir.is_dir():
-                    return bootdir
+                self.bootdir = root / d / machine_id
+                if self.bootdir.is_dir():
+                    return
+            else:
+                raise LayoutNotFound(f'/boot/[EFI/]{machine_id} '
+                                     f'not found')
         except FileNotFoundError:
             pass
-        return None
-
-    @classmethod
-    def is_acceptable(self,
-                      root: Path = Path('/')
-                      ) -> bool:
-        return self.get_boot_subdir(root) is not None
+        raise LayoutNotFound('/etc/machine-id not found')
 
     def find_kernels(self,
                      exclusions: typing.Container[KernelFileType] = [],
-                     root: Path = Path('/')
                      ) -> typing.List[Kernel]:
-        boot_subdir = self.get_boot_subdir(root)
-        if boot_subdir is None:
-            raise SystemError(
-                'Kernel directory for current machine not found '
-                'in /boot or /boot/EFI')
-
         # this would wreak havok all around the place
         assert KernelFileType.KERNEL not in exclusions
 
         # collect all module directories first
         module_dict = self.get_module_dict(
             exclusions=exclusions,
-            module_directory=root / 'lib/modules')
+            module_directory=self.root / 'lib/modules')
 
         # collect from /boot
         kernels: typing.Dict[str, Kernel] = {}
-        for ver in os.listdir(boot_subdir):
+        for ver in os.listdir(self.bootdir):
             if ver.startswith('.'):
                 continue
-            dir_path = boot_subdir / ver
+            dir_path = self.bootdir / ver
             if dir_path.is_symlink() or not dir_path.is_dir():
                 continue
 

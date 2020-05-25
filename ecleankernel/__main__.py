@@ -17,6 +17,7 @@ from pathlib import Path
 from ecleankernel import __version__
 from ecleankernel.bootloader import Bootloader, BootloaderNotFound
 from ecleankernel.file import KernelImage, KernelFileType
+from ecleankernel.layout import Layout, LayoutNotFound
 from ecleankernel.process import get_removal_list, get_removable_files
 
 from ecleankernel.bootloader.grub import GRUB
@@ -64,7 +65,8 @@ def main(argv: typing.List[str]) -> int:
     kernel_parts = [x.value for x in KernelFileType.__members__.values()]
     bootloaders: typing.List[typing.Type[Bootloader]] = [
         LILO, GRUB2, GRUB, Yaboot, Symlinks]
-    layouts = [BlSpecLayout, StdLayout]
+    layouts: typing.List[typing.Type[Layout]] = [
+        BlSpecLayout, StdLayout]
     sorts = [MTimeSort, VersionSort]
 
     argp = argparse.ArgumentParser(description=ecleankern_desc.strip())
@@ -172,14 +174,17 @@ def main(argv: typing.List[str]) -> int:
         logging.getLogger().setLevel(logging.INFO)
 
     for layout_cls in layouts:
-        if (args.layout == 'auto'
-                and layout_cls.is_acceptable(root=args.root)):
-            break
-        elif args.layout == layout_cls.name:
-            break
+        if args.layout in ('auto', layout_cls.name):
+            try:
+                layout = layout_cls(root=args.root)
+                break
+            except LayoutNotFound as e:
+                logging.debug(f'Layout failed: {layout_cls}; '
+                              f'exception: {e}')
     else:
+        # auto should never fail -- std always succeeds
+        assert args.layout != 'auto'
         argp.error(f'Invalid layout: {args.layout}')
-    layout = layout_cls()
     logging.debug(f'Layout: {layout}')
 
     bootloader: typing.Optional[Bootloader] = None
@@ -219,8 +224,7 @@ def main(argv: typing.List[str]) -> int:
             raise MountError()
 
         try:
-            kernels = layout.find_kernels(exclusions=exclusions,
-                                          root=args.root)
+            kernels = layout.find_kernels(exclusions=exclusions)
 
             if args.list_kernels:
                 ordered = sorted(kernels,
