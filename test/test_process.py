@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
+from ecleankernel.bootloader import Bootloader
 from ecleankernel.file import KernelFileType, GenericFile, KernelImage
 from ecleankernel.kernel import Kernel
 from ecleankernel.process import (
@@ -120,7 +121,7 @@ class KernelRemovalTests(unittest.TestCase):
     def test_removal_bootloader(self) -> None:
         td = Path(self.td.name)
 
-        class MockBootloader(object):
+        class MockBootloader(Bootloader):
             name = 'mock'
 
             def __call__(self) -> typing.Iterable[str]:

@@ -15,7 +15,7 @@ import typing
 from pathlib import Path
 
 from ecleankernel import __version__
-from ecleankernel.bootloader.common import BootloaderNotFound
+from ecleankernel.bootloader import Bootloader, BootloaderNotFound
 from ecleankernel.file import KernelImage, KernelFileType
 from ecleankernel.process import get_removal_list, get_removable_files
 
@@ -62,7 +62,7 @@ as root, or preferably mount /boot before using it.'''
 
 def main(argv: typing.List[str]) -> int:
     kernel_parts = [x.value for x in KernelFileType.__members__.values()]
-    bootloaders: typing.List[typing.Any] = [
+    bootloaders: typing.List[typing.Type[Bootloader]] = [
         LILO, GRUB2, GRUB, Yaboot, Symlinks]
     layouts = [BlSpecLayout, StdLayout]
     sorts = [MTimeSort, VersionSort]
@@ -182,8 +182,7 @@ def main(argv: typing.List[str]) -> int:
     layout = layout_cls()
     logging.debug(f'Layout: {layout}')
 
-    # TODO: make it into a proper class
-    bootloader: typing.Any = None
+    bootloader: typing.Optional[Bootloader] = None
     for bootloader_cls in bootloaders:
         if args.bootloader == 'auto':
             try:
@@ -256,8 +255,9 @@ def main(argv: typing.List[str]) -> int:
                     except FileNotFoundError:
                         pass
 
-                if not args.no_bootloader_update and hasattr(bootloader,
-                                                             'postrm'):
+                if (not args.no_bootloader_update
+                        and bootloader is not None
+                        and hasattr(bootloader, 'postrm')):
                     has_bootloader_postrm = True
 
             if not removals:
@@ -289,6 +289,7 @@ def main(argv: typing.List[str]) -> int:
                     print('kernel-install will be called to perform '
                           'prerm tasks.')
                 if has_bootloader_postrm:
+                    assert bootloader is not None
                     print(f'Bootloader {bootloader.name} config will '
                           f'be updated.')
             else:
@@ -345,6 +346,7 @@ def main(argv: typing.List[str]) -> int:
                 if nremoved:
                     print(f'Removed {nremoved} kernels')
                     if has_bootloader_postrm:
+                        assert bootloader is not None
                         bootloader.postrm()
 
             return 0

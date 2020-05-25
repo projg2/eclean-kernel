@@ -6,10 +6,10 @@ import logging
 import re
 import typing
 
-from ecleankernel.bootloader.common import BootloaderNotFound
+from ecleankernel.bootloader import Bootloader, BootloaderNotFound
 
 
-class LILO(object):
+class LILO(Bootloader):
     name = 'lilo'
     kernel_re = r'^\s*image\s*=\s*(?P<path>.+)\s*$'
     def_path: typing.Tuple[str, ...] = ('/etc/lilo.conf',)

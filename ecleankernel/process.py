@@ -11,6 +11,7 @@ import typing
 
 from pathlib import Path
 
+from ecleankernel.bootloader import Bootloader
 from ecleankernel.file import KernelImage
 from ecleankernel.kernel import Kernel
 from ecleankernel.sort import KernelSort
@@ -60,7 +61,7 @@ def remove_stray(kernels: typing.Iterable[Kernel]
 def get_removal_list(kernels: typing.List[Kernel],
                      sorter: KernelSort,
                      limit: typing.Optional[int] = 0,
-                     bootloader: typing.Optional[typing.Any] = None,
+                     bootloader: typing.Optional[Bootloader] = None,
                      destructive: bool = False
                      ) -> RemovableKernelDict:
     """

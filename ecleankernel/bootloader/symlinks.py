@@ -5,14 +5,11 @@
 import os.path
 import typing
 
+from ecleankernel.bootloader import Bootloader
 
-class Symlinks(object):
+
+class Symlinks(Bootloader):
     name = 'symlinks'
-
-    def __init__(self,
-                 path: typing.Optional[str] = None
-                 ) -> None:
-        pass
 
     def __call__(self) -> typing.Iterable[str]:
         for fn in ('vmlinuz', 'vmlinux', 'kernel', 'bzImage'):
