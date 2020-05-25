@@ -16,6 +16,14 @@ class Bootloader(abc.ABC):
         """Get list of kernel names known to bootloader"""
         pass
 
+    def has_postrm(self) -> bool:
+        """Return True if a meaningful postrm can be run"""
+        return False
+
+    def postrm(self) -> None:
+        """Perform post-removal tasks"""
+        pass
+
 
 class BootloaderNotFound(Exception):
     pass

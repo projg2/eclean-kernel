@@ -257,7 +257,7 @@ def main(argv: typing.List[str]) -> int:
 
                 if (not args.no_bootloader_update
                         and bootloader is not None
-                        and hasattr(bootloader, 'postrm')):
+                        and bootloader.has_postrm()):
                     has_bootloader_postrm = True
 
             if not removals:
