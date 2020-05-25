@@ -180,6 +180,7 @@ def main(argv: typing.List[str]) -> int:
     else:
         argp.error(f'Invalid layout: {args.layout}')
     layout = layout_cls()
+    logging.debug(f'Layout: {layout}')
 
     # TODO: make it into a proper class
     bootloader: typing.Any = None
@@ -189,10 +190,11 @@ def main(argv: typing.List[str]) -> int:
                 bootloader = bootloader_cls()
                 break
             except BootloaderNotFound:
-                pass
+                logging.debug(f'Bootloader failed: {bootloader_cls}')
         elif args.bootloader == bootloader_cls.name:
             bootloader = bootloader_cls()
             break
+    logging.debug(f'Bootloader: {bootloader}')
 
     for sort_cls in sorts:
         if args.sort_order == sort_cls.name:
@@ -200,6 +202,7 @@ def main(argv: typing.List[str]) -> int:
     else:
         argp.error(f'Invalid sort order: {args.sort}')
     sorter = sort_cls()
+    logging.debug(f'Sorter: {sorter}')
 
     bootfs = DummyMount()
     try:
