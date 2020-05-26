@@ -70,7 +70,8 @@ class StdLayout(ModuleDirLayout):
             pass
         else:
             for fn in diter:
-                if fn.startswith('.'):
+                # skip hidden and GRUB signature files
+                if fn.startswith('.') or fn.endswith('.sig'):
                     continue
                 path = boot_directory / fn
                 if path.is_symlink() or not path.is_file():
