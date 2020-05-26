@@ -68,6 +68,7 @@ class StdLayoutTests(unittest.TestCase):
         test_spec += [
             'boot/config-1.2.4',
             'boot/vmlinuz-1.2.2',
+            'boot/vmlinuz-1.2.2.sig',
             'boot/System.map-1.2.2',
             'lib/modules/1.2.2/test.ko',
             'lib/modules/1.2.3/test.ko',
