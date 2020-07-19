@@ -38,7 +38,5 @@ class GRUB2(GRUB):
             logging.debug('Calling grub2-mkconfig')
             try:
                 subprocess.call(['grub-mkconfig', '-o', self.path])
-                return
             except FileNotFoundError:
-                pass
-            subprocess.call(['grub2-mkconfig', '-o', self.path])
+                subprocess.call(['grub2-mkconfig', '-o', self.path])
