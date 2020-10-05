@@ -35,8 +35,8 @@ class KernelRemovalTests(unittest.TestCase):
 
         self.td = tempfile.TemporaryDirectory()
         td = Path(self.td.name)
-        write_bzImage(td / 'kernel.old', b'old')
-        write_bzImage(td / 'kernel.new', b'new')
+        write_bzImage(td / 'kernel.old', b'old built on test')
+        write_bzImage(td / 'kernel.new', b'new built on test')
         with open(td / 'config-stray', 'w'):
             pass
         with open(td / 'initrd-stray.img', 'w'):
