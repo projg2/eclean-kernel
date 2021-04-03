@@ -28,7 +28,7 @@ class BlSpecLayout(ModuleDirLayout):
     """
 
     name = 'blspec'
-    potential_dirs = ('boot/EFI', 'boot')
+    potential_dirs = ('boot/EFI', 'boot/efi', 'boot', 'efi')
 
     name_map = {
         'initrd': KernelFileType.INITRAMFS,
