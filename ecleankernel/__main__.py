@@ -203,7 +203,7 @@ def main(argv: typing.List[str]) -> int:
                     break
                 except LayoutNotFound as e:
                     logging.debug(f'Layout failed: {layout_cls}; '
-                                f'exception: {e}')
+                                  f'exception: {e}')
         else:
             # auto should never fail -- std always succeeds
             assert args.layout != 'auto'
