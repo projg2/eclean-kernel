@@ -124,7 +124,7 @@ def main(argv: typing.List[str]) -> int:
                        action='store_true',
                        help='Enable debugging output')
     group.add_argument('-M', '--no-mount',
-                       action='store_false',
+                       action='store_true',
                        help='Disable (re-)mounting /boot if necessary')
     group.add_argument('--no-bootloader-update',
                        action='store_true',
