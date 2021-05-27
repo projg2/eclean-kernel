@@ -173,33 +173,6 @@ def main(argv: typing.List[str]) -> int:
     else:
         logging.getLogger().setLevel(logging.INFO)
 
-    for layout_cls in layouts:
-        if args.layout in ('auto', layout_cls.name):
-            try:
-                layout = layout_cls(root=args.root)
-                break
-            except LayoutNotFound as e:
-                logging.debug(f'Layout failed: {layout_cls}; '
-                              f'exception: {e}')
-    else:
-        # auto should never fail -- std always succeeds
-        assert args.layout != 'auto'
-        argp.error(f'Invalid layout: {args.layout}')
-    logging.debug(f'Layout: {layout}')
-
-    bootloader: typing.Optional[Bootloader] = None
-    for bootloader_cls in bootloaders:
-        if args.bootloader == 'auto':
-            try:
-                bootloader = bootloader_cls()
-                break
-            except BootloaderNotFound:
-                logging.debug(f'Bootloader failed: {bootloader_cls}')
-        elif args.bootloader == bootloader_cls.name:
-            bootloader = bootloader_cls()
-            break
-    logging.debug(f'Bootloader: {bootloader}')
-
     for sort_cls in sorts:
         if args.sort_order == sort_cls.name:
             break
@@ -222,6 +195,33 @@ def main(argv: typing.List[str]) -> int:
             bootfs.mount()
         except RuntimeError:
             raise MountError()
+
+        for layout_cls in layouts:
+            if args.layout in ('auto', layout_cls.name):
+                try:
+                    layout = layout_cls(root=args.root)
+                    break
+                except LayoutNotFound as e:
+                    logging.debug(f'Layout failed: {layout_cls}; '
+                                f'exception: {e}')
+        else:
+            # auto should never fail -- std always succeeds
+            assert args.layout != 'auto'
+            argp.error(f'Invalid layout: {args.layout}')
+        logging.debug(f'Layout: {layout}')
+
+        bootloader: typing.Optional[Bootloader] = None
+        for bootloader_cls in bootloaders:
+            if args.bootloader == 'auto':
+                try:
+                    bootloader = bootloader_cls()
+                    break
+                except BootloaderNotFound:
+                    logging.debug(f'Bootloader failed: {bootloader_cls}')
+            elif args.bootloader == bootloader_cls.name:
+                bootloader = bootloader_cls()
+                break
+        logging.debug(f'Bootloader: {bootloader}')
 
         try:
             kernels = layout.find_kernels(exclusions=exclusions)
