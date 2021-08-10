@@ -272,7 +272,7 @@ def main(argv: typing.List[str]) -> int:
             print('[-] file being removed')
             if not args.pretend:
                 print('[x] file does not exist (anymore)')
-            print('[+] file being kept (used by other kernels')
+            print('[+] file being kept (used by other kernels)')
             print()
 
             if args.pretend:
