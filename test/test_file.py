@@ -8,8 +8,8 @@ import os
 import tempfile
 import unittest
 
-from importlib import util
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from ecleankernel.file import (KernelImage, ModuleDirectory,
                                UnrecognizedKernelError,
@@ -103,13 +103,14 @@ class KernelImageTests(unittest.TestCase):
         with self.assertRaises(UnrecognizedKernelError):
             KernelImage(path).read_internal_version()
 
-    def test_missing_decompressor(self) -> None:
-        if util.find_spec('lzo'):
-            self.skipTest('the missing decompressor is installed')
+    @patch('importlib.import_module')
+    def test_missing_decompressor(self, import_module: MagicMock) -> None:
         path = Path(self.td.name) / 'vmlinuz'
         with open(path, 'wb') as f:
             f.write(b'\x89\x4c\x5a\x4f\x00\x0d\x0a\x1a\x0a')
             f.write(0x210 * b'\0')
+        import_module.side_effect = ModuleNotFoundError(
+            "No module named 'lzo'")
         with self.assertRaises(MissingDecompressorError):
             KernelImage(path).read_internal_version()
 
