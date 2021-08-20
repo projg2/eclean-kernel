@@ -116,9 +116,9 @@ class KernelImage(GenericFile):
                     mod = importlib.import_module(comp)
                 except ModuleNotFoundError:
                     raise MissingDecompressorError(
-                        f'Kernel file {self.path} is compressed with '
-                        f'{comp}, but the required decompressor '
-                        f'is not installed')
+                        f'The Python module {comp!r} that is required '
+                        f'to decompress kernel file {self.path} '
+                        f'is not installed.')
                 if comp == 'zstandard':
                     # Technically a redundant import, this is just
                     # to make your IDE happy :)
