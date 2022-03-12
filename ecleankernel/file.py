@@ -8,6 +8,7 @@ import importlib
 import os
 import shutil
 import struct
+from lzma import LZMADecompressor
 
 from pathlib import Path
 
@@ -106,7 +107,7 @@ class KernelImage(GenericFile):
             b'\x04\x22\x4d\x18': 'lz4.frame',
             b'\x28\xb5\x2f\xfd': 'zstandard',
             b'\x89\x4c\x5a\x4f\x00\x0d\x0a\x1a\x0a': 'lzo',
-            }
+        }
         maxlen = max(len(x) for x in magic_dict)
         header = f.read(maxlen)
         f.seek(0)
@@ -126,11 +127,15 @@ class KernelImage(GenericFile):
                     reader = zstandard.ZstdDecompressor().stream_reader(f)
                     decomp = b''
                     while True:
-                        chunk = reader.read(1024*1024)
+                        chunk = reader.read(1024 * 1024)
                         if not chunk:
                             break
                         decomp += chunk
                     return decomp
+                elif comp == 'lzma':
+                    # Using .decompress() causes an error because of
+                    # no end-of-stream marker
+                    return LZMADecompressor().decompress(f.read())
                 else:
                     return getattr(mod, 'decompress')(f.read())
         return f.read()
