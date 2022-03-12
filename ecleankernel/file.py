@@ -8,6 +8,7 @@ import importlib
 import os
 import shutil
 import struct
+from lzma import LZMADecompressor, FORMAT_AUTO, LZMAError
 
 from pathlib import Path
 
@@ -96,6 +97,25 @@ class KernelImage(GenericFile):
         super().__init__(path, KernelFileType.KERNEL)
         self.internal_version = self.read_internal_version()
 
+    def decompress_lzma(self, data):
+        results = []
+        while True:
+            decomp = LZMADecompressor(FORMAT_AUTO, None, None)
+            try:
+                res = decomp.decompress(data)
+            except LZMAError:
+                if results:
+                    break  # Leftover data is not a valid LZMA/XZ stream; ignore it.
+                else:
+                    raise  # Error on the first iteration; bail out.
+            results.append(res)
+            data = decomp.unused_data
+            if not data:
+                break
+            if not decomp.eof:
+                raise LZMAError("Compressed data ended before the end-of-stream marker was reached")
+        return b"".join(results)
+
     def decompress_raw(self) -> bytes:
         f = open(self.path, 'rb')
         magic_dict = {
@@ -131,6 +151,8 @@ class KernelImage(GenericFile):
                             break
                         decomp += chunk
                     return decomp
+                elif comp == 'lzma':
+                    return self.decompress_lzma(f.read())
                 else:
                     return getattr(mod, 'decompress')(f.read())
         return f.read()
