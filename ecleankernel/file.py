@@ -101,7 +101,7 @@ class KernelImage(GenericFile):
     def decompress_lzma(self, data: bytes) -> bytes:
         results: List[bytes] = []
         while True:
-            decomp = LZMADecompressor(FORMAT_AUTO, None, None)
+            decomp = LZMADecompressor()
             try:
                 res = decomp.decompress(data)
             except LZMAError:
