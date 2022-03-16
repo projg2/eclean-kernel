@@ -8,7 +8,7 @@ import importlib
 import os
 import shutil
 import struct
-from lzma import LZMADecompressor, FORMAT_AUTO, LZMAError
+from lzma import LZMADecompressor, LZMAError
 
 from pathlib import Path
 from typing import List
