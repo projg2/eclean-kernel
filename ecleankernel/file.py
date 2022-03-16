@@ -11,6 +11,7 @@ import struct
 from lzma import LZMADecompressor, FORMAT_AUTO, LZMAError
 
 from pathlib import Path
+from typing import List
 
 
 @enum.unique
@@ -97,15 +98,16 @@ class KernelImage(GenericFile):
         super().__init__(path, KernelFileType.KERNEL)
         self.internal_version = self.read_internal_version()
 
-    def decompress_lzma(self, data):
-        results = []
+    def decompress_lzma(self, data: bytes) -> bytes:
+        results: List[bytes] = []
         while True:
             decomp = LZMADecompressor(FORMAT_AUTO, None, None)
             try:
                 res = decomp.decompress(data)
             except LZMAError:
                 if results:
-                    break  # Leftover data is not a valid LZMA/XZ stream; ignore it.
+                    break  # Leftover data is not a valid LZMA/XZ stream;
+                    # ignore it.
                 else:
                     raise  # Error on the first iteration; bail out.
             results.append(res)
@@ -113,7 +115,8 @@ class KernelImage(GenericFile):
             if not data:
                 break
             if not decomp.eof:
-                raise LZMAError("Compressed data ended before the end-of-stream marker was reached")
+                raise LZMAError("Compressed data ended before the "
+                                "end-of-stream marker was reached")
         return b"".join(results)
 
     def decompress_raw(self) -> bytes:
@@ -126,7 +129,7 @@ class KernelImage(GenericFile):
             b'\x04\x22\x4d\x18': 'lz4.frame',
             b'\x28\xb5\x2f\xfd': 'zstandard',
             b'\x89\x4c\x5a\x4f\x00\x0d\x0a\x1a\x0a': 'lzo',
-            }
+        }
         maxlen = max(len(x) for x in magic_dict)
         header = f.read(maxlen)
         f.seek(0)
@@ -146,7 +149,7 @@ class KernelImage(GenericFile):
                     reader = zstandard.ZstdDecompressor().stream_reader(f)
                     decomp = b''
                     while True:
-                        chunk = reader.read(1024*1024)
+                        chunk = reader.read(1024 * 1024)
                         if not chunk:
                             break
                         decomp += chunk
