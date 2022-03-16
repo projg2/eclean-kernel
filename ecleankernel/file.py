@@ -11,7 +11,6 @@ import struct
 from lzma import LZMADecompressor, LZMAError
 
 from pathlib import Path
-from typing import List
 
 
 @enum.unique
@@ -99,25 +98,12 @@ class KernelImage(GenericFile):
         self.internal_version = self.read_internal_version()
 
     def decompress_lzma(self, data: bytes) -> bytes:
-        results: List[bytes] = []
-        while True:
-            decomp = LZMADecompressor()
-            try:
-                res = decomp.decompress(data)
-            except LZMAError:
-                if results:
-                    break  # Leftover data is not a valid LZMA/XZ stream;
-                    # ignore it.
-                else:
-                    raise  # Error on the first iteration; bail out.
-            results.append(res)
-            data = decomp.unused_data
-            if not data:
-                break
-            if not decomp.eof:
-                raise LZMAError("Compressed data ended before the "
-                                "end-of-stream marker was reached")
-        return b"".join(results)
+        decomp = LZMADecompressor()
+        try:
+            res = decomp.decompress(data)
+        except LZMAError:
+            raise
+        return res
 
     def decompress_raw(self) -> bytes:
         f = open(self.path, 'rb')
