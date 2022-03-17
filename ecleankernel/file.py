@@ -8,7 +8,7 @@ import importlib
 import os
 import shutil
 import struct
-from lzma import LZMADecompressor, LZMAError
+from lzma import LZMADecompressor
 
 from pathlib import Path
 
@@ -97,14 +97,6 @@ class KernelImage(GenericFile):
         super().__init__(path, KernelFileType.KERNEL)
         self.internal_version = self.read_internal_version()
 
-    def decompress_lzma(self, data: bytes) -> bytes:
-        decomp = LZMADecompressor()
-        try:
-            res = decomp.decompress(data)
-        except LZMAError:
-            raise
-        return res
-
     def decompress_raw(self) -> bytes:
         f = open(self.path, 'rb')
         magic_dict = {
@@ -141,7 +133,10 @@ class KernelImage(GenericFile):
                         decomp += chunk
                     return decomp
                 elif comp == 'lzma':
-                    return self.decompress_lzma(f.read())
+                    # Decompress single stream
+                    # because the kernel doesn't create
+                    # multiple LZMA compressed streams
+                    return LZMADecompressor().decompress(f.read())
                 else:
                     return getattr(mod, 'decompress')(f.read())
         return f.read()
