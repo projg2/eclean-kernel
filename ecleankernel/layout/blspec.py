@@ -41,13 +41,13 @@ class BlSpecLayout(ModuleDirLayout):
         super().__init__(root)
         try:
             with open(root / 'etc/machine-id') as f:
-                machine_id = f.read().strip()
+                self.machine_id = f.read().strip()
             for d in self.potential_dirs:
-                self.bootdir = root / d / machine_id
+                self.bootdir = root / d / self.machine_id
                 if self.bootdir.is_dir():
                     return
             else:
-                raise LayoutNotFound(f'/boot/[EFI/]{machine_id} '
+                raise LayoutNotFound(f'/boot/[EFI/]{self.machine_id} '
                                      f'not found')
         except FileNotFoundError:
             pass
@@ -92,6 +92,17 @@ class BlSpecLayout(ModuleDirLayout):
                         fobj = kobj
                 if ftype not in exclusions:
                     k.all_files.append(fobj)
+
+            config_entry = (
+                self.bootdir.parent / "loader/entries" /
+                f"{self.machine_id}-{kobj.internal_version}.conf"
+            )
+
+            if os.path.isfile(config_entry):
+                k.all_files.append(
+                    GenericFile(config_entry, KernelFileType.MISC)
+                )
+
             k.all_files.append(EmptyDirectory(dir_path))
             kernels[ver] = k
 
