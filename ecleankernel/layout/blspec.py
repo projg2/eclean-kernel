@@ -1,7 +1,8 @@
 # vim:fileencoding=utf-8
-# (c) 2020 Michał Górny <mgorny@gentoo.org>
+# (c) 2020-2023 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
+import logging
 import os
 import typing
 
@@ -83,8 +84,9 @@ class BlSpecLayout(ModuleDirLayout):
                 if ftype == KernelFileType.KERNEL:
                     try:
                         kobj = KernelImage(path)
-                    except UnrecognizedKernelError:
-                        pass
+                    except UnrecognizedKernelError as err:
+                        logging.debug(
+                            f"Unrecognized potential kernel image: {err}")
                     else:
                         # associate the module directory
                         k.all_files.extend(
