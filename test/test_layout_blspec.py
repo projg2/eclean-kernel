@@ -27,6 +27,7 @@ class BlSpecLayoutTests(unittest.TestCase):
     maxDiff = None
 
     machine_id = '0123456789abcdef0123456789abcdef'
+    entry_token = "testsys"
 
     def setUp(self) -> None:
         # prevent system configs from interfering
@@ -34,19 +35,21 @@ class BlSpecLayoutTests(unittest.TestCase):
         os.environ['XDG_CONFIG_HOME'] = '/dev/null'
 
     def create_layout(self,
-                      efi_subdir: bool = False
+                      efi_subdir: bool = False,
+                      entry_token: bool = False,
                       ) -> tempfile.TemporaryDirectory:
         subdir = 'EFI/' if efi_subdir else ''
+        subdir += self.entry_token if entry_token else self.machine_id
         test_spec = [
-            f'boot/{subdir}{self.machine_id}/1.2.4/initrd',
-            f'boot/{subdir}{self.machine_id}/1.2.3/initrd',
-            f'boot/{subdir}{self.machine_id}/1.2.3/linux',
-            f'boot/{subdir}{self.machine_id}/1.2.3/misc',
-            f'boot/{subdir}{self.machine_id}/1.2.2/initrd',
-            f'boot/{subdir}{self.machine_id}/1.2.2/linux',
-            f'boot/{subdir}{self.machine_id}/1.2.2/.hidden-blocker',
-            f'boot/{subdir}{self.machine_id}/1.2.1/initrd',
-            f'boot/{subdir}{self.machine_id}/1.2.1/linux',
+            f"boot/{subdir}/1.2.4/initrd",
+            f"boot/{subdir}/1.2.3/initrd",
+            f"boot/{subdir}/1.2.3/linux",
+            f"boot/{subdir}/1.2.3/misc",
+            f"boot/{subdir}/1.2.2/initrd",
+            f"boot/{subdir}/1.2.2/linux",
+            f"boot/{subdir}/1.2.2/.hidden-blocker",
+            f"boot/{subdir}/1.2.1/initrd",
+            f"boot/{subdir}/1.2.1/linux",
             'etc/machine-id',
             'lib/modules/1.2.4/test.ko',
             'lib/modules/1.2.3/test.ko',
@@ -55,13 +58,19 @@ class BlSpecLayoutTests(unittest.TestCase):
             'usr/src/linux/Makefile',
         ]
 
+        if entry_token:
+            test_spec.append("etc/kernel/entry-token")
+
         td = make_test_files(test_spec)
         path = Path(td.name)
-        bootsub = path / f'boot/{subdir}{self.machine_id}'
+        bootsub = path / f"boot/{subdir}"
         modules = path / 'lib/modules'
 
         with open(path / 'etc/machine-id', 'w') as f:
             f.write(f'{self.machine_id}\n')
+        if entry_token:
+            with open(path / "etc/kernel/entry-token", "w") as f:
+                f.write(f"{self.entry_token}\n")
         write_bzImage(bootsub / '1.2.3/linux', b'1.2.3 test')
         write_bzImage(bootsub / '1.2.2/linux', b'1.2.2 test')
         write_bzImage(bootsub / '1.2.1/linux', b'1.2.1 test')
@@ -119,6 +128,10 @@ class BlSpecLayoutTests(unittest.TestCase):
 
     def test_accept_EFI(self) -> None:
         with self.create_layout(efi_subdir=True) as td:
+            BlSpecLayout(root=Path(td))
+
+    def test_accept_entry_token(self) -> None:
+        with self.create_layout(entry_token=True) as td:
             BlSpecLayout(root=Path(td))
 
     def test_accept_no_boot(self) -> None:

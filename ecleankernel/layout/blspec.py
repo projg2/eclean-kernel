@@ -40,19 +40,24 @@ class BlSpecLayout(ModuleDirLayout):
                  root: Path
                  ) -> None:
         super().__init__(root)
-        try:
-            with open(root / 'etc/machine-id') as f:
-                machine_id = f.read().strip()
-            for d in self.potential_dirs:
-                self.bootdir = root / d / machine_id
-                if self.bootdir.is_dir():
-                    return
-            else:
-                raise LayoutNotFound(f'/boot/[EFI/]{machine_id} '
-                                     f'not found')
-        except FileNotFoundError:
-            pass
-        raise LayoutNotFound('/etc/machine-id not found')
+        # TODO: according to bootctl(1), we should fall back to IMAGE_ID=
+        # and then ID= from os-release
+        for path in ("etc/kernel/entry-token", "etc/machine-id"):
+            try:
+                with open(root / path) as f:
+                    kernel_id = f.read().strip()
+                break
+            except FileNotFoundError:
+                pass
+        else:
+            raise LayoutNotFound("/etc/machine-id not found")
+
+        for d in self.potential_dirs:
+            self.bootdir = root / d / kernel_id
+            if self.bootdir.is_dir():
+                return
+        else:
+            raise LayoutNotFound(f"/boot/[EFI/]{kernel_id} not found")
 
     def find_kernels(self,
                      exclusions: typing.Container[KernelFileType] = [],
