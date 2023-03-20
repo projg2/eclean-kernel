@@ -85,6 +85,11 @@ def main(argv: typing.List[str]) -> int:
                        action='store_true',
                        help='Print the list of kernels to be removed '
                             'and exit')
+    group.add_argument("--read-kernel-version",
+                       type=Path,
+                       metavar="KERNEL_PATH",
+                       help="Read kernel version from the specified file, "
+                            "print it and exit")
 
     group = argp.add_argument_group('system configuration')
     group.add_argument('-b', '--bootloader',
@@ -195,6 +200,11 @@ def main(argv: typing.List[str]) -> int:
             bootfs.mount()
         except RuntimeError:
             raise MountError()
+
+        if args.read_kernel_version is not None:
+            print(KernelImage(args.read_kernel_version)
+                  .read_internal_version())
+            return 0
 
         for layout_cls in layouts:
             if args.layout in ('auto', layout_cls.name):
