@@ -144,10 +144,13 @@ class KernelImage(GenericFile):
     def read_internal_version(self) -> str:
         """Read version from the kernel file"""
         with open(self.path, "rb") as f:
-            verbuf = self.read_version_from_bzimage(f)
-            if verbuf is None:
-                verbuf = self.read_version_from_raw(f)
-            if verbuf is None:
+            for func in (self.read_version_from_bzimage,
+                         self.read_version_from_raw,
+                         ):
+                verbuf = func(f)
+                if verbuf is not None:
+                    break
+            else:
                 raise UnrecognizedKernelError(
                     f"Kernel file {self.path} not recognized as any "
                     f"special format and unable to find version string in it")
