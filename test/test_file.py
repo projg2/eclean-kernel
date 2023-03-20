@@ -1,5 +1,5 @@
 # vim:fileencoding=utf-8
-# (c) 2020 Michał Górny <mgorny@gentoo.org>
+# (c) 2020-2023 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
 import gzip
@@ -54,6 +54,39 @@ def write_compress(path: Path,
         f.write(version_line)
 
 
+def write_efistub(path: Path,
+                  version_line: bytes,
+                  ) -> None:
+    """Write an EFIstub kernel image at `path`, with `version_line`"""
+
+    with open(path, "wb") as f:
+        # PE header (magic, padding, COFF header at 0x80)
+        f.write(b"MZ" + 0x3a * b"\0" + b"\x80\0\0\0")
+        # (arbitrary) padding
+        f.write(0x40 * b"\0")
+        # COFF header (magic, padding, 4 sections, padding, 8 byte opt header)
+        f.write(b"PE\0\0\0\0\4\0" + 12 * b"\0" + b"\x08\0\0\0")
+        # opt header (padding)
+        f.write(8 * b"\0")
+        # 4 sections
+        sections = {
+            b".code": b"\0\0\0\0",
+            b".data": b"\0\0\0\0",
+            b".linux": b"\x80\1\0\0",
+            b".initrd": b"\0\0\0\0",
+        }
+        for name, offset in sections.items():
+            f.write(name + (20 - len(name)) * b"\0" + offset + 16 * b"\0")
+        # padding
+        f.write(64 * b"\0")
+        # bzImage
+        f.write(0x202 * b'\0')
+        f.write(b'HdrS')
+        f.write(8 * b'\0')
+        f.write(b'\x10\x00')
+        f.write(version_line)
+
+
 class KernelImageTests(unittest.TestCase):
     def setUp(self) -> None:
         self.td = tempfile.TemporaryDirectory()
@@ -81,6 +114,13 @@ class KernelImageTests(unittest.TestCase):
         self.assertEqual(
             KernelImage(path).read_internal_version(),
             '1.2.3')
+
+    def test_read_internal_version_efistub(self) -> None:
+        path = Path(self.td.name) / "vmlinuz"
+        write_efistub(path, b"1.2.3 built on test")
+        self.assertEqual(
+            KernelImage(path).read_internal_version(),
+            "1.2.3")
 
     def test_very_short(self) -> None:
         path = Path(self.td.name) / 'vmlinuz'

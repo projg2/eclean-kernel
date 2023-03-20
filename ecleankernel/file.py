@@ -156,7 +156,8 @@ class KernelImage(GenericFile):
     def read_internal_version(self) -> str:
         """Read version from the kernel file"""
         with open(self.path, "rb") as f:
-            for func in (self.read_version_from_bzimage,
+            for func in (self.read_version_from_efi,
+                         self.read_version_from_bzimage,
                          self.read_version_from_raw,
                          ):
                 verbuf = func(f)
@@ -213,6 +214,50 @@ class KernelImage(GenericFile):
         pos += len(ver_start)
         sbuf = b[pos:pos + 0x100]
         return sbuf
+
+    def read_version_from_efi(self,
+                              f: typing.IO[bytes]
+                              ) -> typing.Optional[bytes]:
+        """Read version from EFI executable image"""
+
+        with autorewind(f) as initial_offset:
+            # https://learn.microsoft.com/en-us/windows/win32/debug/pe-format
+            # 0x3c is a pointer to the PE format image file
+            buf = f.read(0x40)
+            if len(buf) != 0x40 or buf[:2] != b"MZ":
+                return None
+            coff_offset = struct.unpack_from("<L", buf, 0x3c)[0]
+
+            # at offset, we find PE\0\0 signature and COFF file header
+            f.seek(coff_offset - 0x40, 1)
+            buf = f.read(24)
+            if len(buf) != 24 or buf[:4] != b"PE\0\0":
+                return None
+            _, num_section, _, _, _, opt_header_size, _ = (
+                struct.unpack_from("<HHIIIHH", buf, 4))
+
+            # optional part of header follows the "mandatory" part,
+            # seek past it
+            f.seek(opt_header_size, 1)
+
+            # the header is followed by section table, consisting
+            # of [num_section] 40-byte rows
+            for i in range(0, num_section):
+                buf = f.read(40)
+                if len(buf) != 40:
+                    raise UnrecognizedKernelError(
+                        f"PE file {self.path}: EOF in section table!")
+                if buf[:8] == b".linux\0\0":
+                    offset = struct.unpack_from("<I", buf, 20)[0]
+                    f.seek(initial_offset + offset)
+                    for func in (self.read_version_from_bzimage,
+                                 self.read_version_from_raw,
+                                 ):
+                        verbuf = func(f)
+                        if verbuf is not None:
+                            return verbuf
+                    break
+            return None
 
     def __repr__(self) -> str:
         return (f'KernelImage({repr(self.path)})')
