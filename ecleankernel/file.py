@@ -1,5 +1,5 @@
 # vim:fileencoding=utf-8
-# (c) 2011-2020 Michał Górny <mgorny@gentoo.org>
+# (c) 2011-2023 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
 import enum
@@ -8,6 +8,8 @@ import importlib
 import os
 import shutil
 import struct
+import typing
+
 from lzma import LZMADecompressor
 
 from pathlib import Path
@@ -97,8 +99,7 @@ class KernelImage(GenericFile):
         super().__init__(path, KernelFileType.KERNEL)
         self.internal_version = self.read_internal_version()
 
-    def decompress_raw(self) -> bytes:
-        f = open(self.path, 'rb')
+    def decompress_raw(self, f: typing.IO[bytes]) -> bytes:
         magic_dict = {
             b'\x1f\x8b\x08': 'gzip',
             b'\x42\x5a\x68': 'bz2',
@@ -142,45 +143,60 @@ class KernelImage(GenericFile):
 
     def read_internal_version(self) -> str:
         """Read version from the kernel file"""
-        f = open(self.path, 'rb')
+        with open(self.path, "rb") as f:
+            verbuf = self.read_version_from_bzimage(f)
+            if verbuf is None:
+                verbuf = self.read_version_from_raw(f)
+            if verbuf is None:
+                raise UnrecognizedKernelError(
+                    f"Kernel file {self.path} not recognized as any "
+                    f"special format and unable to find version string in it")
+
+        ret = verbuf.split(b" ", 1)
+        if len(ret) == 1:
+            raise UnrecognizedKernelError(
+                f"Kernel file {self.path} terminates before end of version "
+                "string")
+        return ret[0].decode()
+
+    def read_version_from_bzimage(self,
+                                  f: typing.IO[bytes],
+                                  ) -> typing.Optional[bytes]:
+        """Read version from bzImage, if the file is in that format"""
+
         f.seek(0x200)
         # short seek would result in eof, so read() will return ''
         buf = f.read(0x10)
-        if len(buf) != 0x10:
+        if len(buf) != 0x10 or buf[2:6] != b"HdrS":
+            return None
+
+        offset = struct.unpack_from("H", buf, 0x0e)[0]
+        f.seek(offset - 0x10, 1)
+        buf = f.read(0x100)  # XXX
+        if not buf:
             raise UnrecognizedKernelError(
-                f'Kernel file {self.path} terminates before bzImage '
-                f'header')
-        if buf[2:6] == b'HdrS':
-            offset = struct.unpack_from('H', buf, 0x0e)[0]
-            f.seek(offset - 0x10, 1)
-            buf = f.read(0x100)  # XXX
-            if not buf:
-                raise UnrecognizedKernelError(
-                    f'Kernel file {self.path} terminates before expected '
-                    f'version string position ({offset + 0x200})')
-            ret = buf.split(b' ', 1)
-        else:
-            # If it's not a bzImage it must be a raw binary,
-            # check if it's compressed first
-            b = self.decompress_raw()
-            # unlike with bzImage, the raw kernel binary has no header
-            # that includes the version, so we parse the version message
-            # that appears on boot
-            ver_start = 'Linux version '
-            pos = b.find(ver_start.encode())
-            if pos == -1:
-                raise UnrecognizedKernelError(
-                    f'Kernel file {self.path} does not appear '
-                    f'to have a version string, '
-                    f'or the compression format was not recognized')
-            pos += len(ver_start)
-            sbuf = b[pos:pos + 0x100]
-            ret = sbuf.split(b' ', 1)
-        if len(ret) == 1:
-            raise UnrecognizedKernelError(
-                f'Kernel file {self.path} terminates '
-                f'before end of version string')
-        return ret[0].decode()
+                f"Kernel file {self.path} terminates before expected "
+                f"version string position ({offset + 0x200})")
+        return buf
+
+    def read_version_from_raw(self,
+                              f: typing.IO[bytes],
+                              ) -> typing.Optional[bytes]:
+        """Read version from raw kernel image"""
+
+        # check if it's compressed first
+        f.seek(0)
+        b = self.decompress_raw(f)
+        # unlike with bzImage, the raw kernel binary has no header
+        # that includes the version, so we parse the version message
+        # that appears on boot
+        ver_start = 'Linux version '
+        pos = b.find(ver_start.encode())
+        if pos == -1:
+            return None
+        pos += len(ver_start)
+        sbuf = b[pos:pos + 0x100]
+        return sbuf
 
     def __repr__(self) -> str:
         return (f'KernelImage({repr(self.path)})')
