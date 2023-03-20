@@ -111,7 +111,7 @@ class KernelImage(GenericFile):
         }
         maxlen = max(len(x) for x in magic_dict)
         header = f.read(maxlen)
-        f.seek(0)
+        f.seek(-len(header), 1)
         for magic, comp in magic_dict.items():
             if header.startswith(magic):
                 try:
@@ -164,10 +164,11 @@ class KernelImage(GenericFile):
                                   ) -> typing.Optional[bytes]:
         """Read version from bzImage, if the file is in that format"""
 
-        f.seek(0x200)
+        f.seek(0x200, 1)
         # short seek would result in eof, so read() will return ''
         buf = f.read(0x10)
         if len(buf) != 0x10 or buf[2:6] != b"HdrS":
+            f.seek(-0x200 - len(buf), 1)
             return None
 
         offset = struct.unpack_from("H", buf, 0x0e)[0]
@@ -185,7 +186,6 @@ class KernelImage(GenericFile):
         """Read version from raw kernel image"""
 
         # check if it's compressed first
-        f.seek(0)
         b = self.decompress_raw(f)
         # unlike with bzImage, the raw kernel binary has no header
         # that includes the version, so we parse the version message
