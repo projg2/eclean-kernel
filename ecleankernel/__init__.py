@@ -4,4 +4,4 @@
 
 """Installed kernel cleanup tool"""
 
-__version__ = '2.99.3'
+__version__ = "2.99.4"
