@@ -2,6 +2,7 @@
 # (c) 2011-2023 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
+import contextlib
 import enum
 import errno
 import importlib
@@ -33,6 +34,17 @@ class UnrecognizedKernelError(Exception):
 
 class MissingDecompressorError(Exception):
     pass
+
+
+@contextlib.contextmanager
+def autorewind(f: typing.IO[bytes]) -> typing.Iterator[int]:
+    """Context manager that autorewinds file to the initial position"""
+
+    offset = f.tell()
+    try:
+        yield offset
+    finally:
+        f.seek(offset)
 
 
 class GenericFile(object):
@@ -110,8 +122,8 @@ class KernelImage(GenericFile):
             b'\x89\x4c\x5a\x4f\x00\x0d\x0a\x1a\x0a': 'lzo',
         }
         maxlen = max(len(x) for x in magic_dict)
-        header = f.read(maxlen)
-        f.seek(-len(header), 1)
+        with autorewind(f):
+            header = f.read(maxlen)
         for magic, comp in magic_dict.items():
             if header.startswith(magic):
                 try:
@@ -167,16 +179,17 @@ class KernelImage(GenericFile):
                                   ) -> typing.Optional[bytes]:
         """Read version from bzImage, if the file is in that format"""
 
-        f.seek(0x200, 1)
-        # short seek would result in eof, so read() will return ''
-        buf = f.read(0x10)
-        if len(buf) != 0x10 or buf[2:6] != b"HdrS":
-            f.seek(-0x200 - len(buf), 1)
-            return None
+        with autorewind(f):
+            f.seek(0x200, 1)
+            # short seek would result in eof, so read() will return ''
+            buf = f.read(0x10)
+            if len(buf) != 0x10 or buf[2:6] != b"HdrS":
+                return None
 
-        offset = struct.unpack_from("H", buf, 0x0e)[0]
-        f.seek(offset - 0x10, 1)
-        buf = f.read(0x100)  # XXX
+            offset = struct.unpack_from("H", buf, 0x0e)[0]
+            f.seek(offset - 0x10, 1)
+            buf = f.read(0x100)  # XXX
+
         if not buf:
             raise UnrecognizedKernelError(
                 f"Kernel file {self.path} terminates before expected "
