@@ -19,6 +19,7 @@ from ecleankernel.bootloader import Bootloader, BootloaderNotFound
 from ecleankernel.file import KernelImage, KernelFileType
 from ecleankernel.layout import Layout, LayoutNotFound
 from ecleankernel.process import get_removal_list, get_removable_files
+from ecleankernel.kernel import Kernel
 
 from ecleankernel.bootloader.grub import GRUB
 from ecleankernel.bootloader.grub2 import GRUB2
@@ -160,6 +161,15 @@ def main(argv: typing.List[str]) -> int:
             # XDG_CONFIG_* does not have to be correct
             pass
 
+    hook_dirs = []
+    for config_dir in config_dirs:
+        config_dir_path = Path(os.path.expanduser(config_dir))
+        hook_dir = config_dir_path \
+            / "eclean-kernel" \
+            / "post-kernel-sets.d"
+        if hook_dir.is_dir():
+            hook_dirs.append(hook_dir)
+
     all_args.extend(argv)
     args = argp.parse_args(all_args)
 
@@ -255,6 +265,32 @@ def main(argv: typing.List[str]) -> int:
                 sorter=sorter,
                 bootloader=bootloader,
                 destructive=args.destructive)
+
+            if hook_dirs:
+                preserved_kernels = [k for k in kernels
+                                     if k not in removals]
+
+                def as_version_list(kernels: typing.Iterable[Kernel]) -> str:
+                    return " ".join([x.version for x in kernels])
+
+                env = os.environ.copy()
+                env.update(
+                    ECLEAN_KERNEL_PRESERVED=as_version_list(preserved_kernels),
+                    ECLEAN_KERNEL_REMOVAL_CANDIDATES=as_version_list(removals),
+                    ECLEAN_KERNEL_ALL=as_version_list(kernels),
+                )
+
+                for hook_dir in hook_dirs:
+                    for hook in hook_dir.iterdir():
+                        if not hook.is_file():
+                            continue
+                        # Skip dotfiles.
+                        if hook.name.startswith("."):
+                            continue
+                        if not os.access(hook, os.X_OK):
+                            continue
+                        res = subprocess.run(hook, env=env)
+                        res.check_returncode()
 
             has_kernel_install = False
             has_bootloader_postrm = False
