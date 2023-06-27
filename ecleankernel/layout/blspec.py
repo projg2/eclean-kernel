@@ -60,6 +60,33 @@ class BlSpecLayout(ModuleDirLayout):
         else:
             raise LayoutNotFound("/boot/[EFI/]loader not found")
 
+    def append_kernel_files(self,
+                            ftype: KernelFileType,
+                            path: Path,
+                            k: Kernel,
+                            ver: str,
+                            module_dict: dict,
+                            exclusions: typing.Container[KernelFileType] = [],
+                            ) -> Kernel:
+        fobj = GenericFile(path, ftype)
+
+        if ftype == KernelFileType.KERNEL:
+            try:
+                kobj = KernelImage(path)
+            except UnrecognizedKernelError as err:
+                logging.debug(
+                    f"Unrecognized potential kernel image: {err}")
+            else:
+                fobj = kobj
+                # associate the module directory
+                k.all_files.extend(
+                    module_dict.get(kobj.internal_version, []))
+
+        if ftype not in exclusions:
+            k.all_files.append(fobj)
+
+        return k
+
     def find_kernels(self,
                      exclusions: typing.Container[KernelFileType] = [],
                      ) -> typing.List[Kernel]:
@@ -82,27 +109,15 @@ class BlSpecLayout(ModuleDirLayout):
                     continue
 
                 k = Kernel(ver)
+
                 for fn in os.listdir(dir_path):
                     if fn.startswith('.'):
                         continue
-                    path = dir_path / fn
-                    ftype = self.name_map.get(fn, KernelFileType.MISC)
-                    fobj = GenericFile(path, ftype)
-                    if ftype == KernelFileType.KERNEL:
-                        try:
-                            kobj = KernelImage(path)
-                        except UnrecognizedKernelError as err:
-                            logging.debug(
-                                f"Unrecognized potential kernel image: {err}")
-                        else:
-                            # associate the module directory
-                            k.all_files.extend(
-                                module_dict.get(kobj.internal_version, []))
-                            fobj = kobj
-                    if ftype not in exclusions:
-                        k.all_files.append(fobj)
-                k.all_files.append(EmptyDirectory(dir_path))
-                kernels[ver] = k
+                    kernels[ver] = self.append_kernel_files(
+                        self.name_map.get(fn, KernelFileType.MISC),
+                        dir_path / fn,
+                        k, ver, module_dict, exclusions)
+                kernels[ver].all_files.append(EmptyDirectory(dir_path))
 
         # merge unassociated modules into kernel groups
         for mkv, fobjs in module_dict.items():
