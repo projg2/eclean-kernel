@@ -45,7 +45,7 @@ class BlSpecLayout(ModuleDirLayout):
         for path in ("etc/kernel/entry-token", "etc/machine-id"):
             try:
                 with open(root / path) as f:
-                    kernel_id = f.read().strip()
+                    self.kernel_id = f.read().strip()
                 break
             except FileNotFoundError:
                 pass
@@ -53,11 +53,12 @@ class BlSpecLayout(ModuleDirLayout):
             raise LayoutNotFound("/etc/machine-id not found")
 
         for d in self.potential_dirs:
-            self.bootdir = root / d / kernel_id
-            if self.bootdir.is_dir():
+            bootloaderdir = root / d / "loader"
+            if bootloaderdir.is_dir():
+                self.blsdir = root / d / self.kernel_id
                 return
         else:
-            raise LayoutNotFound(f"/boot/[EFI/]{kernel_id} not found")
+            raise LayoutNotFound("/boot/[EFI/]loader not found")
 
     def find_kernels(self,
                      exclusions: typing.Container[KernelFileType] = [],
@@ -72,35 +73,36 @@ class BlSpecLayout(ModuleDirLayout):
 
         # collect from /boot
         kernels: typing.Dict[str, Kernel] = {}
-        for ver in os.listdir(self.bootdir):
-            if ver.startswith('.'):
-                continue
-            dir_path = self.bootdir / ver
-            if dir_path.is_symlink() or not dir_path.is_dir():
-                continue
-
-            k = Kernel(ver)
-            for fn in os.listdir(dir_path):
-                if fn.startswith('.'):
+        if self.blsdir.is_dir():
+            for ver in os.listdir(self.blsdir):
+                if ver.startswith('.'):
                     continue
-                path = dir_path / fn
-                ftype = self.name_map.get(fn, KernelFileType.MISC)
-                fobj = GenericFile(path, ftype)
-                if ftype == KernelFileType.KERNEL:
-                    try:
-                        kobj = KernelImage(path)
-                    except UnrecognizedKernelError as err:
-                        logging.debug(
-                            f"Unrecognized potential kernel image: {err}")
-                    else:
-                        # associate the module directory
-                        k.all_files.extend(
-                            module_dict.get(kobj.internal_version, []))
-                        fobj = kobj
-                if ftype not in exclusions:
-                    k.all_files.append(fobj)
-            k.all_files.append(EmptyDirectory(dir_path))
-            kernels[ver] = k
+                dir_path = self.blsdir / ver
+                if dir_path.is_symlink() or not dir_path.is_dir():
+                    continue
+
+                k = Kernel(ver)
+                for fn in os.listdir(dir_path):
+                    if fn.startswith('.'):
+                        continue
+                    path = dir_path / fn
+                    ftype = self.name_map.get(fn, KernelFileType.MISC)
+                    fobj = GenericFile(path, ftype)
+                    if ftype == KernelFileType.KERNEL:
+                        try:
+                            kobj = KernelImage(path)
+                        except UnrecognizedKernelError as err:
+                            logging.debug(
+                                f"Unrecognized potential kernel image: {err}")
+                        else:
+                            # associate the module directory
+                            k.all_files.extend(
+                                module_dict.get(kobj.internal_version, []))
+                            fobj = kobj
+                    if ftype not in exclusions:
+                        k.all_files.append(fobj)
+                k.all_files.append(EmptyDirectory(dir_path))
+                kernels[ver] = k
 
         # merge unassociated modules into kernel groups
         for mkv, fobjs in module_dict.items():
