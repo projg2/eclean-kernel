@@ -55,7 +55,12 @@ class BlSpecLayout(ModuleDirLayout):
         for d in self.potential_dirs:
             bootloaderdir = root / d / "loader"
             if bootloaderdir.is_dir():
+                # Type 1 entries (linux+initrd) are in
+                # $BOOT/ENTRY-TOKEN/KERNEL-VERSION/
                 self.blsdir = root / d / self.kernel_id
+                # Type 2 entries (uki's) are in
+                # $BOOT/EFI/Linux/ENTRY-TOKEN-KERNEL-VERSION.efi
+                self.ukidir = root / d / "EFI" / "Linux"
                 return
         else:
             raise LayoutNotFound("/boot/[EFI/]loader not found")
@@ -118,6 +123,27 @@ class BlSpecLayout(ModuleDirLayout):
                         dir_path / fn,
                         k, ver, module_dict, exclusions)
                 kernels[ver].all_files.append(EmptyDirectory(dir_path))
+
+        # collect from ESP/Linux
+        if self.ukidir.is_dir():
+            for file in os.listdir(self.ukidir):
+                if (not file.startswith(self.kernel_id) or
+                        not file.endswith(".efi")):
+                    # This file is not an efi file or does not belong to us
+                    continue
+                ver = file.removeprefix(self.kernel_id +
+                                        "-").removesuffix(".efi")
+
+                if ver in kernels:
+                    raise LayoutNotFound(
+                        "Same kernel version installed in bls and uki layout")
+
+                kernels[ver] = self.append_kernel_files(
+                        KernelFileType.KERNEL,
+                        self.ukidir / file,
+                        Kernel(ver),
+                        ver, module_dict,
+                        exclusions)
 
         # merge unassociated modules into kernel groups
         for mkv, fobjs in module_dict.items():
