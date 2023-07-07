@@ -39,19 +39,23 @@ class BlSpecLayoutTests(unittest.TestCase):
                       entry_token: bool = False,
                       ) -> tempfile.TemporaryDirectory:
         subdir = 'EFI/' if efi_subdir else ''
-        subdir += self.entry_token if entry_token else self.machine_id
+        entry = self.entry_token if entry_token else self.machine_id
         test_spec = [
-            f"boot/{subdir}/1.2.4/initrd",
-            f"boot/{subdir}/1.2.3/initrd",
-            f"boot/{subdir}/1.2.3/linux",
-            f"boot/{subdir}/1.2.3/misc",
-            f"boot/{subdir}/1.2.2/initrd",
-            f"boot/{subdir}/1.2.2/linux",
-            f"boot/{subdir}/1.2.2/.hidden-blocker",
-            f"boot/{subdir}/1.2.1/initrd",
-            f"boot/{subdir}/1.2.1/linux",
-            f"boot/{subdir}/../loader/entries",
+            f"boot/{subdir}/EFI/Linux/{entry}-1.2.6.efi",
+            f"boot/{subdir}/EFI/Linux/{entry}-1.2.5.efi",
+            f"boot/{subdir}/{entry}/1.2.4/initrd",
+            f"boot/{subdir}/{entry}/1.2.3/initrd",
+            f"boot/{subdir}/{entry}/1.2.3/linux",
+            f"boot/{subdir}/{entry}/1.2.3/misc",
+            f"boot/{subdir}/{entry}/1.2.2/initrd",
+            f"boot/{subdir}/{entry}/1.2.2/linux",
+            f"boot/{subdir}/{entry}/1.2.2/.hidden-blocker",
+            f"boot/{subdir}/{entry}/1.2.1/initrd",
+            f"boot/{subdir}/{entry}/1.2.1/linux",
+            f"boot/{subdir}/loader/entries",
             'etc/machine-id',
+            'lib/modules/1.2.6/test.ko',
+            'lib/modules/1.2.5/test.ko',
             'lib/modules/1.2.4/test.ko',
             'lib/modules/1.2.3/test.ko',
             'lib/modules/1.2.2/test.ko',
@@ -72,9 +76,13 @@ class BlSpecLayoutTests(unittest.TestCase):
         if entry_token:
             with open(path / "etc/kernel/entry-token", "w") as f:
                 f.write(f"{self.entry_token}\n")
-        write_bzImage(bootsub / '1.2.3/linux', b'1.2.3 test')
-        write_bzImage(bootsub / '1.2.2/linux', b'1.2.2 test')
-        write_bzImage(bootsub / '1.2.1/linux', b'1.2.1 test')
+        write_bzImage(bootsub / f"EFI/Linux/{entry}-1.2.6.efi", b'1.2.6 test')
+        write_bzImage(bootsub / f"EFI/Linux/{entry}-1.2.5.efi", b'1.2.5 test')
+        write_bzImage(bootsub / f"{entry}/1.2.3/linux", b'1.2.3 test')
+        write_bzImage(bootsub / f"{entry}/1.2.2/linux", b'1.2.2 test')
+        write_bzImage(bootsub / f"{entry}/1.2.1/linux", b'1.2.1 test')
+        os.symlink('../../../usr/src/linux', modules / '1.2.6/build')
+        os.symlink('../../../usr/src/linux', modules / '1.2.5/build')
         os.symlink('../../../usr/src/linux', modules / '1.2.3/build')
         os.symlink('../../../usr/src/linux', modules / '1.2.2/build')
 
@@ -83,6 +91,8 @@ class BlSpecLayoutTests(unittest.TestCase):
     def assert_kernels(self,
                        root: Path,
                        efi_subdir: bool = False,
+                       k126: bool = True,
+                       k125: bool = True,
                        k124: bool = True,
                        k123: bool = True,
                        k122: bool = True,
@@ -91,6 +101,8 @@ class BlSpecLayoutTests(unittest.TestCase):
         """Assert whether specified kernels were removed or kept"""
         subdir = 'EFI/' if efi_subdir else ''
         files = {
+            f'boot/{subdir}/EFI/Linux/{self.machine_id}-1.2.6.efi': k126,
+            f'boot/{subdir}/EFI/Linux/{self.machine_id}-1.2.5.efi': k125,
             f'boot/{subdir}{self.machine_id}/1.2.4/initrd': k124,
             f'boot/{subdir}{self.machine_id}/1.2.4': k124,
             f'boot/{subdir}{self.machine_id}/1.2.3/initrd': k123,
@@ -107,6 +119,10 @@ class BlSpecLayoutTests(unittest.TestCase):
             f'boot/{subdir}{self.machine_id}': True,
             f"boot/{subdir}/loader/entries": True,
             'etc/machine-id': True,
+            'lib/modules/1.2.6/test.ko': k126,
+            'lib/modules/1.2.6': k126,
+            'lib/modules/1.2.5/test.ko': k125,
+            'lib/modules/1.2.5': k125,
             'lib/modules/1.2.4/test.ko': k124,
             'lib/modules/1.2.4': k124,
             'lib/modules/1.2.3/test.ko': k123,
@@ -116,8 +132,8 @@ class BlSpecLayoutTests(unittest.TestCase):
             'lib/modules/1.2.1/test.ko': k121,
             'lib/modules/1.2.1': k121,
             'lib/modules': True,
-            'usr/src/linux/Makefile': k123 or k122,
-            'usr/src/linux': k123 or k122,
+            'usr/src/linux/Makefile': k126 or k125 or k123 or k122,
+            'usr/src/linux': k126 or k125 or k123 or k122,
             'usr/src': True,
         }
         expected_files = [f for f, exp in files.items() if exp]
@@ -162,50 +178,66 @@ class BlSpecLayoutTests(unittest.TestCase):
     def test_find_modules(self) -> None:
         with self.create_layout() as td:
             path = Path(td)
-            boot = path / f'boot/{self.machine_id}'
+            blspath = path / f"boot/{self.machine_id}"
+            ukipath = path / "boot/EFI/Linux"
             modules = path / 'lib/modules'
 
             self.assertEqual(
                 sorted(kernel_paths(
                     BlSpecLayout(root=path).find_kernels())),
                 [('1.2.1',
-                  [EmptyDirectory(boot / '1.2.1'),
-                   GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.1/linux'),
+                  [EmptyDirectory(blspath / '1.2.1'),
+                   GenericFile(blspath / '1.2.1/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.1/linux'),
                    ModuleDirectory(modules / '1.2.1'),
                    ],
                   '1.2.1'),
                  ('1.2.2',
-                  [EmptyDirectory(boot / '1.2.2'),
-                   GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.2/linux'),
+                  [EmptyDirectory(blspath / '1.2.2'),
+                   GenericFile(blspath / '1.2.2/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.2/linux'),
                    ModuleDirectory(modules / '1.2.2'),
                    GenericFile(modules / '1.2.2/../../../usr/src/linux',
                                KFT.BUILD),
                    ],
                   '1.2.2'),
                  ('1.2.3',
-                  [EmptyDirectory(boot / '1.2.3'),
-                   GenericFile(boot / '1.2.3/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.3/linux'),
-                   GenericFile(boot / '1.2.3/misc', KFT.MISC),
+                  [EmptyDirectory(blspath / '1.2.3'),
+                   GenericFile(blspath / '1.2.3/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.3/linux'),
+                   GenericFile(blspath / '1.2.3/misc', KFT.MISC),
                    ModuleDirectory(modules / '1.2.3'),
                    GenericFile(modules / '1.2.3/../../../usr/src/linux',
                                KFT.BUILD),
                    ],
                   '1.2.3'),
                  ('1.2.4',
-                  [EmptyDirectory(boot / '1.2.4'),
-                   GenericFile(boot / '1.2.4/initrd', KFT.INITRAMFS),
+                  [EmptyDirectory(blspath / '1.2.4'),
+                   GenericFile(blspath / '1.2.4/initrd', KFT.INITRAMFS),
                    ModuleDirectory(modules / '1.2.4'),
                    ],
                   None),
+                 ('1.2.5',
+                  [KernelImage(ukipath / f"{self.machine_id}-1.2.5.efi"),
+                   ModuleDirectory(modules / '1.2.5'),
+                   GenericFile(modules / '1.2.5/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.5'),
+                 ('1.2.6',
+                  [KernelImage(ukipath / f"{self.machine_id}-1.2.6.efi"),
+                   ModuleDirectory(modules / '1.2.6'),
+                   GenericFile(modules / '1.2.6/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.6'),
                  ])
 
     def test_exclude_misc(self) -> None:
         with self.create_layout() as td:
             path = Path(td)
-            boot = path / f'boot/{self.machine_id}'
+            blspath = path / f"boot/{self.machine_id}"
+            ukipath = path / "boot/EFI/Linux"
             modules = path / 'lib/modules'
 
             self.assertEqual(
@@ -213,42 +245,57 @@ class BlSpecLayoutTests(unittest.TestCase):
                     BlSpecLayout(root=path).find_kernels(
                         exclusions=[KFT.MISC]))),
                 [('1.2.1',
-                  [EmptyDirectory(boot / '1.2.1'),
-                   GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.1/linux'),
+                  [EmptyDirectory(blspath / '1.2.1'),
+                   GenericFile(blspath / '1.2.1/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.1/linux'),
                    ModuleDirectory(modules / '1.2.1'),
                    ],
                   '1.2.1'),
                  ('1.2.2',
-                  [EmptyDirectory(boot / '1.2.2'),
-                   GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.2/linux'),
+                  [EmptyDirectory(blspath / '1.2.2'),
+                   GenericFile(blspath / '1.2.2/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.2/linux'),
                    ModuleDirectory(modules / '1.2.2'),
                    GenericFile(modules / '1.2.2/../../../usr/src/linux',
                                KFT.BUILD),
                    ],
                   '1.2.2'),
                  ('1.2.3',
-                  [EmptyDirectory(boot / '1.2.3'),
-                   GenericFile(boot / '1.2.3/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.3/linux'),
+                  [EmptyDirectory(blspath / '1.2.3'),
+                   GenericFile(blspath / '1.2.3/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.3/linux'),
                    ModuleDirectory(modules / '1.2.3'),
                    GenericFile(modules / '1.2.3/../../../usr/src/linux',
                                KFT.BUILD),
                    ],
                   '1.2.3'),
                  ('1.2.4',
-                  [EmptyDirectory(boot / '1.2.4'),
-                   GenericFile(boot / '1.2.4/initrd', KFT.INITRAMFS),
+                  [EmptyDirectory(blspath / '1.2.4'),
+                   GenericFile(blspath / '1.2.4/initrd', KFT.INITRAMFS),
                    ModuleDirectory(modules / '1.2.4'),
                    ],
                   None),
+                 ('1.2.5',
+                  [KernelImage(ukipath / f"{self.machine_id}-1.2.5.efi"),
+                   ModuleDirectory(modules / '1.2.5'),
+                   GenericFile(modules / '1.2.5/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.5'),
+                 ('1.2.6',
+                  [KernelImage(ukipath / f"{self.machine_id}-1.2.6.efi"),
+                   ModuleDirectory(modules / '1.2.6'),
+                   GenericFile(modules / '1.2.6/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.6'),
                  ])
 
     def test_exclude_modules(self) -> None:
         with self.create_layout() as td:
             path = Path(td)
-            boot = path / f'boot/{self.machine_id}'
+            blspath = path / f"boot/{self.machine_id}"
+            ukipath = path / "boot/EFI/Linux"
             modules = path / 'lib/modules'
 
             self.assertEqual(
@@ -256,39 +303,52 @@ class BlSpecLayoutTests(unittest.TestCase):
                     BlSpecLayout(root=path).find_kernels(
                         exclusions=[KFT.MODULES]))),
                 [('1.2.1',
-                  [EmptyDirectory(boot / '1.2.1'),
-                   GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.1/linux'),
+                  [EmptyDirectory(blspath / '1.2.1'),
+                   GenericFile(blspath / '1.2.1/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.1/linux'),
                    ],
                   '1.2.1'),
                  ('1.2.2',
-                  [EmptyDirectory(boot / '1.2.2'),
-                   GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.2/linux'),
+                  [EmptyDirectory(blspath / '1.2.2'),
+                   GenericFile(blspath / '1.2.2/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.2/linux'),
                    GenericFile(modules / '1.2.2/../../../usr/src/linux',
                                KFT.BUILD),
                    ],
                   '1.2.2'),
                  ('1.2.3',
-                  [EmptyDirectory(boot / '1.2.3'),
-                   GenericFile(boot / '1.2.3/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.3/linux'),
-                   GenericFile(boot / '1.2.3/misc', KFT.MISC),
+                  [EmptyDirectory(blspath / '1.2.3'),
+                   GenericFile(blspath / '1.2.3/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.3/linux'),
+                   GenericFile(blspath / '1.2.3/misc', KFT.MISC),
                    GenericFile(modules / '1.2.3/../../../usr/src/linux',
                                KFT.BUILD),
                    ],
                   '1.2.3'),
                  ('1.2.4',
-                  [EmptyDirectory(boot / '1.2.4'),
-                   GenericFile(boot / '1.2.4/initrd', KFT.INITRAMFS),
+                  [EmptyDirectory(blspath / '1.2.4'),
+                   GenericFile(blspath / '1.2.4/initrd', KFT.INITRAMFS),
                    ],
                   None),
+                 ('1.2.5',
+                  [KernelImage(ukipath / f"{self.machine_id}-1.2.5.efi"),
+                   GenericFile(modules / '1.2.5/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.5'),
+                 ('1.2.6',
+                  [KernelImage(ukipath / f"{self.machine_id}-1.2.6.efi"),
+                   GenericFile(modules / '1.2.6/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.6'),
                  ])
 
     def test_exclude_build(self) -> None:
         with self.create_layout() as td:
             path = Path(td)
-            boot = path / f'boot/{self.machine_id}'
+            blspath = path / f"boot/{self.machine_id}"
+            ukipath = path / "boot/EFI/Linux"
             modules = path / 'lib/modules'
 
             self.assertEqual(
@@ -296,76 +356,101 @@ class BlSpecLayoutTests(unittest.TestCase):
                     BlSpecLayout(root=path).find_kernels(
                         exclusions=[KFT.BUILD]))),
                 [('1.2.1',
-                  [EmptyDirectory(boot / '1.2.1'),
-                   GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.1/linux'),
+                  [EmptyDirectory(blspath / '1.2.1'),
+                   GenericFile(blspath / '1.2.1/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.1/linux'),
                    ModuleDirectory(modules / '1.2.1'),
                    ],
                   '1.2.1'),
                  ('1.2.2',
-                  [EmptyDirectory(boot / '1.2.2'),
-                   GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.2/linux'),
+                  [EmptyDirectory(blspath / '1.2.2'),
+                   GenericFile(blspath / '1.2.2/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.2/linux'),
                    ModuleDirectory(modules / '1.2.2'),
                    ],
                   '1.2.2'),
                  ('1.2.3',
-                  [EmptyDirectory(boot / '1.2.3'),
-                   GenericFile(boot / '1.2.3/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.3/linux'),
-                   GenericFile(boot / '1.2.3/misc', KFT.MISC),
+                  [EmptyDirectory(blspath / '1.2.3'),
+                   GenericFile(blspath / '1.2.3/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.3/linux'),
+                   GenericFile(blspath / '1.2.3/misc', KFT.MISC),
                    ModuleDirectory(modules / '1.2.3'),
                    ],
                   '1.2.3'),
                  ('1.2.4',
-                  [EmptyDirectory(boot / '1.2.4'),
-                   GenericFile(boot / '1.2.4/initrd', KFT.INITRAMFS),
+                  [EmptyDirectory(blspath / '1.2.4'),
+                   GenericFile(blspath / '1.2.4/initrd', KFT.INITRAMFS),
                    ModuleDirectory(modules / '1.2.4'),
                    ],
                   None),
+                 ('1.2.5',
+                  [KernelImage(ukipath / f"{self.machine_id}-1.2.5.efi"),
+                   ModuleDirectory(modules / '1.2.5'),
+                   ],
+                  '1.2.5'),
+                 ('1.2.6',
+                  [KernelImage(ukipath / f"{self.machine_id}-1.2.6.efi"),
+                   ModuleDirectory(modules / '1.2.6'),
+                   ],
+                  '1.2.6'),
                  ])
 
     def test_find_modules_EFI(self) -> None:
         with self.create_layout(efi_subdir=True) as td:
             path = Path(td)
-            boot = path / f'boot/EFI/{self.machine_id}'
+            blspath = path / f"boot/EFI/{self.machine_id}"
+            ukipath = path / "boot/EFI/EFI/Linux"
             modules = path / 'lib/modules'
 
             self.assertEqual(
                 sorted(kernel_paths(
                     BlSpecLayout(root=path).find_kernels())),
                 [('1.2.1',
-                  [EmptyDirectory(boot / '1.2.1'),
-                   GenericFile(boot / '1.2.1/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.1/linux'),
+                  [EmptyDirectory(blspath / '1.2.1'),
+                   GenericFile(blspath / '1.2.1/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.1/linux'),
                    ModuleDirectory(modules / '1.2.1'),
                    ],
                   '1.2.1'),
                  ('1.2.2',
-                  [EmptyDirectory(boot / '1.2.2'),
-                   GenericFile(boot / '1.2.2/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.2/linux'),
+                  [EmptyDirectory(blspath / '1.2.2'),
+                   GenericFile(blspath / '1.2.2/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.2/linux'),
                    ModuleDirectory(modules / '1.2.2'),
                    GenericFile(modules / '1.2.2/../../../usr/src/linux',
                                KFT.BUILD),
                    ],
                   '1.2.2'),
                  ('1.2.3',
-                  [EmptyDirectory(boot / '1.2.3'),
-                   GenericFile(boot / '1.2.3/initrd', KFT.INITRAMFS),
-                   KernelImage(boot / '1.2.3/linux'),
-                   GenericFile(boot / '1.2.3/misc', KFT.MISC),
+                  [EmptyDirectory(blspath / '1.2.3'),
+                   GenericFile(blspath / '1.2.3/initrd', KFT.INITRAMFS),
+                   KernelImage(blspath / '1.2.3/linux'),
+                   GenericFile(blspath / '1.2.3/misc', KFT.MISC),
                    ModuleDirectory(modules / '1.2.3'),
                    GenericFile(modules / '1.2.3/../../../usr/src/linux',
                                KFT.BUILD),
                    ],
                   '1.2.3'),
                  ('1.2.4',
-                  [EmptyDirectory(boot / '1.2.4'),
-                   GenericFile(boot / '1.2.4/initrd', KFT.INITRAMFS),
+                  [EmptyDirectory(blspath / '1.2.4'),
+                   GenericFile(blspath / '1.2.4/initrd', KFT.INITRAMFS),
                    ModuleDirectory(modules / '1.2.4'),
                    ],
                   None),
+                 ('1.2.5',
+                  [KernelImage(ukipath / f"{self.machine_id}-1.2.5.efi"),
+                   ModuleDirectory(modules / '1.2.5'),
+                   GenericFile(modules / '1.2.5/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.5'),
+                 ('1.2.6',
+                  [KernelImage(ukipath / f"{self.machine_id}-1.2.6.efi"),
+                   ModuleDirectory(modules / '1.2.6'),
+                   GenericFile(modules / '1.2.6/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.6'),
                  ])
 
     def test_main_remove(self) -> None:
@@ -395,7 +480,9 @@ class BlSpecLayoutTests(unittest.TestCase):
                                 k121=False,
                                 k122=False,
                                 k123=False,
-                                k124=False)
+                                k124=False,
+                                k125=False,
+                                k126=False)
 
     def test_main_remove_all_pretend(self) -> None:
         with self.create_layout() as td:
@@ -413,6 +500,8 @@ class BlSpecLayoutTests(unittest.TestCase):
                 0)
             self.assert_kernels(Path(td),
                                 k121=False,
+                                k122=False,
+                                k123=False,
                                 k124=False)
 
     def test_main_remove_n2_pretend(self) -> None:
