@@ -104,7 +104,7 @@ class BlSpecLayout(ModuleDirLayout):
             module_directory=self.root / 'lib/modules')
 
         # collect from /boot
-        kernels: typing.Dict[str, Kernel] = {}
+        kernels: typing.Dict[typing.Tuple[str, str], Kernel] = {}
         if self.blsdir.is_dir():
             for ver in os.listdir(self.blsdir):
                 if ver.startswith('.'):
@@ -118,11 +118,12 @@ class BlSpecLayout(ModuleDirLayout):
                 for fn in os.listdir(dir_path):
                     if fn.startswith('.'):
                         continue
-                    kernels[ver] = self.append_kernel_files(
+                    kernels[(ver, "bls")] = self.append_kernel_files(
                         self.name_map.get(fn, KernelFileType.MISC),
                         dir_path / fn,
                         k, ver, module_dict, exclusions)
-                kernels[ver].all_files.append(EmptyDirectory(dir_path))
+                kernels[(ver, "bls")].all_files.append(
+                    EmptyDirectory(dir_path))
 
         # collect from ESP/Linux
         if self.ukidir.is_dir():
@@ -134,11 +135,7 @@ class BlSpecLayout(ModuleDirLayout):
                 ver = file.removeprefix(self.kernel_id +
                                         "-").removesuffix(".efi")
 
-                if ver in kernels:
-                    raise LayoutNotFound(
-                        "Same kernel version installed in bls and uki layout")
-
-                kernels[ver] = self.append_kernel_files(
+                kernels[(ver, "uki")] = self.append_kernel_files(
                         KernelFileType.KERNEL,
                         self.ukidir / file,
                         Kernel(ver, layout="uki"),
@@ -149,6 +146,19 @@ class BlSpecLayout(ModuleDirLayout):
         for mkv, fobjs in module_dict.items():
             if any(mkv == k.real_kv for k in kernels.values()):
                 continue
-            kernels.setdefault(mkv, Kernel(mkv)).all_files.extend(fobjs)
+            # this mkv does not have a corresponding kernel
+            # with same real_kv in kernels
+            match_found = False
+            for (ver, layout), k in kernels.items():
+                if ver == mkv:
+                    # extend existing entry
+                    k.all_files.extend(fobjs)
+                    match_found = True
+            if not match_found:
+                # no real_kv for this mkv, no existing entry in kernels
+                layout = "modules-only"
+                kernels.setdefault((mkv, layout),
+                                   Kernel(mkv, layout=layout)
+                                   ).all_files.extend(fobjs)
 
         return list(kernels.values())
