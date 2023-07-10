@@ -113,7 +113,7 @@ class BlSpecLayout(ModuleDirLayout):
                 if dir_path.is_symlink() or not dir_path.is_dir():
                     continue
 
-                k = Kernel(ver)
+                k = Kernel(ver, layout="bls")
 
                 for fn in os.listdir(dir_path):
                     if fn.startswith('.'):
@@ -141,7 +141,7 @@ class BlSpecLayout(ModuleDirLayout):
                 kernels[ver] = self.append_kernel_files(
                         KernelFileType.KERNEL,
                         self.ukidir / file,
-                        Kernel(ver),
+                        Kernel(ver, layout="uki"),
                         ver, module_dict,
                         exclusions)
 

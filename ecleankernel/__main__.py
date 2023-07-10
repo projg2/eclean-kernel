@@ -241,7 +241,7 @@ def main(argv: typing.List[str]) -> int:
                                  key=sorter.key,
                                  reverse=True)
                 for k in ordered:
-                    print(f'{k.version} [{k.real_kv}]')
+                    print(f'{k.layout} {k.version} [{k.real_kv}]')
                     for kf in sorted(k.all_files, key=lambda f: f.path):
                         print(f'- {kf.ftype.value}: {kf.path}')
                     ts = time.strftime("%Y-%m-%d %H:%M:%S",
@@ -292,7 +292,7 @@ def main(argv: typing.List[str]) -> int:
                     get_removable_files(removals, kernels))
 
                 for k, reason, files in file_removals:
-                    print(f'- {k.version}: {", ".join(reason)}')
+                    print(f'- {k.layout} {k.version}: {", ".join(reason)}')
                     for kf in k.all_files:
                         if kf.path in files:
                             sign = '-'
@@ -315,7 +315,7 @@ def main(argv: typing.List[str]) -> int:
 
                 for k, reason in list(removals.items()):
                     while args.ask:
-                        ans = input(f'Remove {k.version} '
+                        ans = input(f'Remove {k.layout} {k.version} '
                                     f'({", ".join(reason)})? [Yes/No]'
                                     ).lower()
                         if 'yes'.startswith(ans):
@@ -330,7 +330,7 @@ def main(argv: typing.List[str]) -> int:
                     get_removable_files(removals, kernels))
 
                 for k, reason, files in file_removals:
-                    print(f'* Removing kernel {k.version} '
+                    print(f'* Removing kernel {k.layout} {k.version} '
                           f'({", ".join(reason)})')
 
                     if has_kernel_install:
