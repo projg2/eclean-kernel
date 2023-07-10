@@ -36,11 +36,14 @@ class Kernel(object):
 
     all_files: typing.List[GenericFile]
     version: str
+    layout: str
 
     def __init__(self,
-                 version: str
+                 version: str,
+                 layout: str = "other",
                  ) -> None:
         self.all_files = []
+        self.layout = layout
         self.version = version
 
     @property
@@ -68,10 +71,12 @@ class Kernel(object):
         if not isinstance(other, Kernel):
             return False
         return (self.version == other.version
-                and self.all_files == other.all_files)
+                and self.all_files == other.all_files
+                and self.layout == other.layout)
 
     def __hash__(self) -> int:
-        return hash(self.version)
+        return hash((self.version, self.layout))
 
     def __repr__(self) -> str:
-        return f'Kernel({repr(self.version)})'
+        return f'Kernel(version={repr(self.version)}, ' \
+            f'layout={repr(self.layout)})'

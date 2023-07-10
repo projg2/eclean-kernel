@@ -330,24 +330,24 @@ class StdLayoutTests(unittest.TestCase):
             val = (x for x in sout.getvalue().splitlines()
                    if not x.startswith('- last modified:'))
             self.assertEqual('\n'.join(val), f'''
-1.2.4 [None]
+other 1.2.4 [None]
 - config: {td}/boot/config-1.2.4
 - modules: {td}/lib/modules/1.2.4
-1.2.3 [1.2.3]
+other 1.2.3 [1.2.3]
 - systemmap: {td}/boot/System.map-1.2.3
 - config: {td}/boot/config-1.2.3
 - initramfs: {td}/boot/initrd-1.2.3.img
 - vmlinuz: {td}/boot/vmlinuz-1.2.3
 - modules: {td}/lib/modules/1.2.3
 - build: {td}/lib/modules/1.2.3/../../../usr/src/linux
-1.2.3.old [1.2.3]
+other 1.2.3.old [1.2.3]
 - systemmap: {td}/boot/System.map-1.2.3.old
 - config: {td}/boot/config-1.2.3.old
 - initramfs: {td}/boot/initrd-1.2.3.img.old
 - vmlinuz: {td}/boot/vmlinuz-1.2.3.old
 - modules: {td}/lib/modules/1.2.3
 - build: {td}/lib/modules/1.2.3/../../../usr/src/linux
-1.2.2 [1.2.2]
+other 1.2.2 [1.2.2]
 - systemmap: {td}/boot/System.map-1.2.2
 - vmlinuz: {td}/boot/vmlinuz-1.2.2
 - modules: {td}/lib/modules/1.2.2
