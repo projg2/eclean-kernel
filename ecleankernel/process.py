@@ -97,6 +97,7 @@ def get_removal_list(kernels: typing.List[Kernel],
             def unprefixify(filenames: typing.Iterable[str]
                             ) -> typing.Iterable[str]:
                 for fn in filenames:
+                    fn = os.path.realpath(fn)
                     if not os.path.exists(fn):
                         print(f'Note: referenced kernel does not '
                               f'exist: {fn}')
