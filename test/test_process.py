@@ -35,6 +35,7 @@ class KernelRemovalTests(unittest.TestCase):
 
         self.td = tempfile.TemporaryDirectory()
         td = Path(self.td.name)
+        Path(td / 'symlink').symlink_to(td / 'kernel.old')
         write_bzImage(td / 'kernel.old', b'old built on test')
         write_bzImage(td / 'kernel.new', b'new built on test')
         with open(td / 'config-stray', 'w'):
@@ -116,6 +117,28 @@ class KernelRemovalTests(unittest.TestCase):
                              sorter=VersionSort(),
                              limit=1,
                              destructive=False)
+
+    def test_removal_bootloader_all_kernels(self) -> None:
+        td = Path(self.td.name)
+
+        class MockBootloader(Bootloader):
+            name = 'mock'
+
+            def __call__(self) -> typing.Iterable[str]:
+                yield str(td / 'symlink')
+
+        self.assertEqual(
+            get_removal_list(self.kernels,
+                             sorter=VersionSort(),
+                             limit=None,
+                             destructive=False,
+                             bootloader=MockBootloader()),
+            {self.kernels[2]: ['vmlinuz does not exist',
+                               'not referenced by bootloader (mock)'],
+             self.kernels[3]: ['vmlinuz does not exist',
+                               'not referenced by bootloader (mock)'],
+             self.kernels[1]: ['not referenced by bootloader (mock)'],
+             })
 
     @unittest.expectedFailure
     def test_removal_bootloader(self) -> None:
