@@ -6,13 +6,12 @@ import itertools
 import logging
 import os
 import os.path
-import re
 import typing
 
 from pathlib import Path
 
 from ecleankernel.bootloader import Bootloader
-from ecleankernel.file import KernelImage
+from ecleankernel.file import GenericFile, KernelImage
 from ecleankernel.kernel import Kernel
 from ecleankernel.sort import KernelSort
 
@@ -89,26 +88,8 @@ def get_removal_list(kernels: typing.List[Kernel],
                 raise SystemError(f'Unable to get kernels from'
                                   f' bootloader config ({bootloader})')
 
-            used_paths = bootloader()
-
-            prefix = re.compile(r'^/boot/(vmlinu[xz]|kernel|bzImage)-')
-            ignored = re.compile(r'^/boot/xen')
-
-            def unprefixify(filenames: typing.Iterable[str]
-                            ) -> typing.Iterable[str]:
-                for fn in filenames:
-                    if not os.path.exists(fn):
-                        print(f'Note: referenced kernel does not '
-                              f'exist: {fn}')
-                    else:
-                        kv, numsubs = prefix.subn('', fn)
-                        if numsubs == 1:
-                            yield kv
-                        elif not ignored.match(fn):
-                            print(f'Note: strangely named used kernel: '
-                                  f'{fn}')
-
-            used = frozenset(unprefixify(used_paths))
+            used_paths = frozenset(p for p in bootloader()
+                                   if os.path.exists(p))
 
         if limit is not None:
             ordered = sorted(
@@ -120,9 +101,16 @@ def get_removal_list(kernels: typing.List[Kernel],
             candidates = kernels
 
         for k in candidates:
+            def kernel_in_use(kernel_images: typing.List[GenericFile],
+                              bootloader_used_kernels: typing.Iterable[str],
+                              ) -> bool:
+                return any(kernel_image.path.samefile(bp)
+                           for bp in bootloader_used_kernels
+                           for kernel_image in kernel_images)
+
             if destructive:
                 remove_kernels.setdefault(k, []).append('unwanted')
-            elif k.version not in used:
+            elif not kernel_in_use(k.all_files, used_paths):
                 assert bootloader is not None
                 remove_kernels.setdefault(k, []).append(
                     f'not referenced by bootloader ({bootloader.name})')
