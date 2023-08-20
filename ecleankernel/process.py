@@ -6,7 +6,6 @@ import itertools
 import logging
 import os
 import os.path
-import re
 import typing
 
 from pathlib import Path
@@ -89,7 +88,8 @@ def get_removal_list(kernels: typing.List[Kernel],
                 raise SystemError(f'Unable to get kernels from'
                                   f' bootloader config ({bootloader})')
 
-            used_paths = frozenset(p for p in bootloader() if os.path.exists(p))
+            used_paths = frozenset(p for p in bootloader()
+                                   if os.path.exists(p))
 
         if limit is not None:
             ordered = sorted(
@@ -102,9 +102,9 @@ def get_removal_list(kernels: typing.List[Kernel],
 
         for k in candidates:
             def kernel_in_use(kernel_images: typing.List[GenericFile],
-                              bootloader_used_kernels: typing.Iterable[str]
-                             ) -> bool:
-                return any(os.path.samefile(kernel_image.path, bp)
+                              bootloader_used_kernels: typing.Iterable[str],
+                              ) -> bool:
+                return any(kernel_image.path.samefile(bp)
                            for bp in bootloader_used_kernels
                            for kernel_image in kernel_images)
 

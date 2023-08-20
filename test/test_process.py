@@ -122,10 +122,10 @@ class KernelRemovalTests(unittest.TestCase):
         td = Path(self.td.name)
 
         class MockBootloader(Bootloader):
-            name = 'mock'
+            name = "mock"
 
             def __call__(self) -> typing.Iterable[str]:
-                yield str(td / 'symlink')
+                yield str(td / "symlink")
 
         self.assertEqual(
             get_removal_list(self.kernels,
@@ -133,11 +133,11 @@ class KernelRemovalTests(unittest.TestCase):
                              limit=None,
                              destructive=False,
                              bootloader=MockBootloader()),
-            {self.kernels[2]: ['vmlinuz does not exist',
-                               'not referenced by bootloader (mock)'],
-             self.kernels[3]: ['vmlinuz does not exist',
-                               'not referenced by bootloader (mock)'],
-             self.kernels[1]: ['not referenced by bootloader (mock)'],
+            {self.kernels[2]: ["vmlinuz does not exist",
+                               "not referenced by bootloader (mock)"],
+             self.kernels[3]: ["vmlinuz does not exist",
+                               "not referenced by bootloader (mock)"],
+             self.kernels[1]: ["not referenced by bootloader (mock)"],
              })
 
     @unittest.expectedFailure
