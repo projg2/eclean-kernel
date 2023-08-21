@@ -88,8 +88,7 @@ def get_removal_list(kernels: typing.List[Kernel],
                 raise SystemError(f'Unable to get kernels from'
                                   f' bootloader config ({bootloader})')
 
-            used_paths = frozenset(p for p in bootloader()
-                                   if os.path.exists(p))
+            used_paths = frozenset(bootloader())
 
         if limit is not None:
             ordered = sorted(
@@ -104,9 +103,14 @@ def get_removal_list(kernels: typing.List[Kernel],
             def kernel_in_use(kernel_images: typing.List[GenericFile],
                               bootloader_used_kernels: typing.Iterable[str],
                               ) -> bool:
-                return any(kernel_image.path.samefile(bp)
-                           for bp in bootloader_used_kernels
-                           for kernel_image in kernel_images)
+                for bp in bootloader_used_kernels:
+                    for kernel_image in kernel_images:
+                        try:
+                            if kernel_image.path.samefile(bp):
+                                return True
+                        except FileNotFoundError:
+                            pass
+                return False
 
             if destructive:
                 remove_kernels.setdefault(k, []).append('unwanted')

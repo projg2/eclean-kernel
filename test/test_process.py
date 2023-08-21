@@ -126,6 +126,7 @@ class KernelRemovalTests(unittest.TestCase):
 
             def __call__(self) -> typing.Iterable[str]:
                 yield str(td / "symlink")
+                yield str(td / "nonexist")
 
         self.assertEqual(
             get_removal_list(self.kernels,
