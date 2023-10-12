@@ -213,6 +213,11 @@ class KernelImage(GenericFile):
             return None
         pos += len(ver_start)
         sbuf = b[pos:pos + 0x100]
+        # Ignore the version information if there are non-ASCII
+        # characters at the beginning.
+        for byte in sbuf[:4]:
+            if byte < 40 or byte > 176:
+                return None
         return sbuf
 
     def read_version_from_efi(self,
