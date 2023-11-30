@@ -128,12 +128,16 @@ class BlSpecLayout(ModuleDirLayout):
         # collect from ESP/Linux
         if self.ukidir.is_dir():
             for file in os.listdir(self.ukidir):
-                if (not file.startswith(self.kernel_id) or
-                        not file.endswith(".efi")):
-                    # This file is not an efi file or does not belong to us
+                if not file.endswith(".efi"):
+                    # Not an UKI
                     continue
-                ver = file.removeprefix(self.kernel_id +
-                                        "-").removesuffix(".efi")
+
+                ver = file.removeprefix(f"{self.kernel_id}-"
+                                        ).removeprefix("gentoo-")
+                if file == ver:
+                    # Not our UKI
+                    continue
+                ver = ver.removesuffix(".efi")
 
                 kernels[(ver, "uki")] = self.append_kernel_files(
                         KernelFileType.KERNEL,
