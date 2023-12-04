@@ -56,6 +56,7 @@ def write_compress(path: Path,
 
 def write_efistub(path: Path,
                   version_line: bytes,
+                  uname: bool = False,
                   ) -> None:
     """Write an EFIstub kernel image at `path`, with `version_line`"""
 
@@ -68,23 +69,34 @@ def write_efistub(path: Path,
         f.write(b"PE\0\0\0\0\4\0" + 12 * b"\0" + b"\x08\0\0\0")
         # opt header (padding)
         f.write(8 * b"\0")
-        # 4 sections
+        # 5 sections
+        section = b".cmdline"
+        val = b"\0\0\0\0"
+        if uname:
+            section = b".uname\0\0" + bytes([len(version_line)])
+            val = b"\x68\1\0\0"
+
         sections = {
             b".code": b"\0\0\0\0",
             b".data": b"\0\0\0\0",
-            b".linux": b"\x80\1\0\0",
+            section: val,
+            b".linux": b"\xA8\1\0\0",
             b".initrd": b"\0\0\0\0",
         }
         for name, offset in sections.items():
             f.write(name + (20 - len(name)) * b"\0" + offset + 16 * b"\0")
-        # padding
-        f.write(64 * b"\0")
+        # .uname/padding
+        if uname:
+            f.write(version_line + (64 - len(version_line)) * b'\0')
+        else:
+            f.write(64 * b'\0')
         # bzImage
         f.write(0x202 * b'\0')
         f.write(b'HdrS')
         f.write(8 * b'\0')
         f.write(b'\x10\x00')
-        f.write(version_line)
+        if not uname:
+            f.write(version_line)
 
 
 class KernelImageTests(unittest.TestCase):
@@ -118,6 +130,20 @@ class KernelImageTests(unittest.TestCase):
     def test_read_internal_version_efistub(self) -> None:
         path = Path(self.td.name) / "vmlinuz"
         write_efistub(path, b"1.2.3 built on test")
+        self.assertEqual(
+            KernelImage(path).read_internal_version(),
+            "1.2.3")
+
+    def test_read_internal_version_efistub_uname(self) -> None:
+        path = Path(self.td.name) / "vmlinuz"
+        write_efistub(path, b"1.2.3 built on test", True)
+        self.assertEqual(
+            KernelImage(path).read_internal_version(),
+            "1.2.3")
+
+    def test_read_internal_version_efistub_uname_nowhitespace(self) -> None:
+        path = Path(self.td.name) / "vmlinuz"
+        write_efistub(path, b"1.2.3", True)
         self.assertEqual(
             KernelImage(path).read_internal_version(),
             "1.2.3")
