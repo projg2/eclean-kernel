@@ -99,7 +99,7 @@ def main(argv: typing.List[str]) -> int:
     group.add_argument('-L', '--layout',
                        default='auto',
                        help=f'Layout used (auto, '
-                            f'{", ".join(l.name for l in layouts)})')
+                            f'{", ".join(x.name for x in layouts)})')
     group.add_argument('-r', '--root',
                        type=Path,
                        default=Path('/'),
