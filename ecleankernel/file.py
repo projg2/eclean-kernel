@@ -6,6 +6,7 @@ import contextlib
 import enum
 import errno
 import importlib
+import logging
 import os
 import shutil
 import struct
@@ -247,16 +248,29 @@ class KernelImage(GenericFile):
                 if len(buf) != 40:
                     raise UnrecognizedKernelError(
                         f"PE file {self.path}: EOF in section table!")
-                if buf[:8] == b".linux\0\0":
-                    offset = struct.unpack_from("<I", buf, 20)[0]
+                size = struct.unpack_from("<I", buf, 8)[0]
+                offset = struct.unpack_from("<I", buf, 20)[0]
+                if buf[:8] == b".uname\0\0":
+                    # ukify writes uname -r output into the .uname section
+                    # https://uapi-group.org/specifications/specs/unified_kernel_image/
+                    f.seek(initial_offset + offset)
+                    # the ' (ukify)' suffix is a hack to avoid raising
+                    # an exception in read_internal_version()
+                    ver = f.read(size) + b' (ukify)'
+                    logging.debug(
+                        f"Found version {ver!r} in '.uname' section")
+                    return ver
+                elif buf[:8] == b".linux\0\0":
                     f.seek(initial_offset + offset)
                     for func in (self.read_version_from_bzimage,
                                  self.read_version_from_raw,
                                  ):
                         verbuf = func(f)
                         if verbuf is not None:
+                            logging.debug(
+                                f"Found version {verbuf!r} in"
+                                f" '.linux' section (generic)")
                             return verbuf
-                    break
             return None
 
     def __repr__(self) -> str:
