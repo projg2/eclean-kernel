@@ -53,14 +53,17 @@ class BlSpecLayout(ModuleDirLayout):
             raise LayoutNotFound("/etc/machine-id not found")
 
         for d in self.potential_dirs:
+            # Present if type 1
             bootloaderdir = root / d / "loader"
-            if bootloaderdir.is_dir():
+            # Present if type 2
+            ukidir = root / d / "EFI" / "Linux"
+            if bootloaderdir.is_dir() or ukidir.is_dir():
                 # Type 1 entries (linux+initrd) are in
                 # $BOOT/ENTRY-TOKEN/KERNEL-VERSION/
                 self.blsdir = root / d / self.kernel_id
                 # Type 2 entries (uki's) are in
                 # $BOOT/EFI/Linux/ENTRY-TOKEN-KERNEL-VERSION.efi
-                self.ukidir = root / d / "EFI" / "Linux"
+                self.ukidir = ukidir
                 return
         else:
             raise LayoutNotFound("/boot/[EFI/]loader not found")
