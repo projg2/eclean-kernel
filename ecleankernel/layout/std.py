@@ -47,6 +47,9 @@ class StdLayout(ModuleDirLayout):
         '.gz',
         '.lz',
         '.xz',
+
+        # efistub
+        '.efi',
     ]
 
     def find_kernels(self,
@@ -63,54 +66,61 @@ class StdLayout(ModuleDirLayout):
         # collect from /boot
         kernels: typing.Dict[str, typing.Dict[str, Kernel]] = {}
         other_files: typing.List[typing.Tuple[GenericFile, str]] = []
-        boot_directory = self.root / 'boot'
-        try:
-            diter = os.listdir(boot_directory)
-        except FileNotFoundError:
-            pass
-        else:
-            for fn in diter:
-                # skip hidden and GRUB signature files
-                if fn.startswith('.') or fn.endswith('.sig'):
-                    continue
-                path = boot_directory / fn
-                if path.is_symlink() or not path.is_file():
-                    continue
-                # skip unversioned files
-                ver = fn.partition('-')[2]
-                if not ver:
-                    continue
 
-                # strip suffix from filename to get the correct version
-                for suffix in self.suffixes:
-                    if ver.endswith(suffix):
-                        ver = ver[:-len(suffix)]
-                        break
-                    elif ver.endswith(suffix + '.old'):
-                        ver = ver[:-len(suffix)-4] + '.old'
-
-                # try recognizing kernel image via magic
+        def find_std_files() -> typing.Iterator:
+            for directory in (self.root / 'boot',
+                              self.root / 'boot/EFI/EFI/Gentoo',
+                              self.root / 'boot/efi/EFI/Gentoo',
+                              self.root / 'boot/EFI/Gentoo',
+                              self.root / 'efi/EFI/Gentoo'):
                 try:
-                    kobj = KernelImage(path)
-                except UnrecognizedKernelError:
-                    # fall back to filename
-                    for ftype, prefix in self.prefixes:
-                        if ftype not in exclusions:
-                            if fn.startswith(prefix):
-                                other_files.append(
-                                    (GenericFile(path, ftype), ver))
-                                break
-                    continue
+                    for file in os.listdir(directory):
+                        yield directory / file
+                except FileNotFoundError:
+                    pass
 
-                # the following is done only for kernel images
-                assert isinstance(kobj, KernelImage)
-                kg = kernels.setdefault(ver, {})
-                k = kg.setdefault(kobj.internal_version, Kernel(ver))
-                k.all_files.append(kobj)
+        for path in find_std_files():
+            fn = path.name
+            # skip hidden and GRUB signature files
+            if fn.startswith('.') or fn.endswith('.sig'):
+                continue
+            if path.is_symlink() or not path.is_file():
+                continue
+            # skip unversioned files
+            ver = fn.partition('-')[2]
+            if not ver:
+                continue
 
-                # associate the module directory
-                k.all_files.extend(
-                    module_dict.get(kobj.internal_version, []))
+            # strip suffix from filename to get the correct version
+            for suffix in self.suffixes:
+                if ver.endswith(suffix):
+                    ver = ver[:-len(suffix)]
+                    break
+                elif ver.endswith(suffix + '.old'):
+                    ver = ver[:-len(suffix)-4] + '.old'
+
+            # try recognizing kernel image via magic
+            try:
+                kobj = KernelImage(path)
+            except UnrecognizedKernelError:
+                # fall back to filename
+                for ftype, prefix in self.prefixes:
+                    if ftype not in exclusions:
+                        if fn.startswith(prefix):
+                            other_files.append(
+                                (GenericFile(path, ftype), ver))
+                            break
+                continue
+
+            # the following is done only for kernel images
+            assert isinstance(kobj, KernelImage)
+            kg = kernels.setdefault(ver, {})
+            k = kg.setdefault(kobj.internal_version, Kernel(ver))
+            k.all_files.append(kobj)
+
+            # associate the module directory
+            k.all_files.extend(
+                module_dict.get(kobj.internal_version, []))
 
         # merge other files into kernel groups
         for fobj, ver in other_files:
