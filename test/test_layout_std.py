@@ -65,11 +65,21 @@ class StdLayoutTests(unittest.TestCase):
             'boot/initrd-1.2.3.img',
         ]
         test_spec += [f'{x}.old' for x in test_spec]
+
+        """EFI Stub"""
+        test_spec += [
+            'efi/EFI/Gentoo/vmlinuz-1.2.1.efi',
+            'efi/EFI/Gentoo/System.map-1.2.1',
+            'efi/EFI/Gentoo/config-1.2.1',
+            'efi/EFI/Gentoo/initramfs-1.2.1.img',
+        ]
+
         test_spec += [
             'boot/config-1.2.4',
             'boot/vmlinuz-1.2.2',
             'boot/vmlinuz-1.2.2.sig',
             'boot/System.map-1.2.2',
+            'lib/modules/1.2.1/test.ko',
             'lib/modules/1.2.2/test.ko',
             'lib/modules/1.2.3/test.ko',
             'lib/modules/1.2.4/test.ko',
@@ -82,11 +92,14 @@ class StdLayoutTests(unittest.TestCase):
         td = make_test_files(test_spec)
         path = Path(td.name)
         boot = path / 'boot'
+        efistub = path / 'efi/EFI/Gentoo/'
         modules = path / 'lib/modules'
 
+        write_bzImage(efistub / 'vmlinuz-1.2.1.efi', b'1.2.1 test')
         write_bzImage(boot / 'vmlinuz-1.2.2', b'1.2.2 test')
         write_bzImage(boot / 'vmlinuz-1.2.3', b'1.2.3 test')
         write_bzImage(boot / 'vmlinuz-1.2.3.old', b'1.2.3 test')
+        os.symlink('../../../usr/src/linux', modules / '1.2.1/build')
         os.symlink('../../../usr/src/linux', modules / '1.2.2/build')
         os.symlink('../../../usr/src/linux', modules / '1.2.3/build')
 
@@ -98,6 +111,7 @@ class StdLayoutTests(unittest.TestCase):
                        k123: bool = True,
                        k123old: bool = True,
                        k122: bool = True,
+                       k121: bool = True,
                        stray: bool = True
                        ) -> None:
         """Assert whether specified kernels were removed or kept"""
@@ -112,7 +126,12 @@ class StdLayoutTests(unittest.TestCase):
             'boot/initrd-1.2.3.img.old': k123old,
             'boot/vmlinuz-1.2.2': k122,
             'boot/System.map-1.2.2': k122,
+            'efi/EFI/Gentoo/vmlinuz-1.2.1.efi': k121,
+            'efi/EFI/Gentoo/System.map-1.2.1': k121,
+            'efi/EFI/Gentoo/config-1.2.1': k121,
+            'efi/EFI/Gentoo/initramfs-1.2.1.img': k121,
             'boot/config-1.2.4': k124,
+            'lib/modules/1.2.1/test.ko': k121,
             'lib/modules/1.2.2/test.ko': k122,
             'lib/modules/1.2.2': k122,
             'lib/modules/1.2.3/test.ko': k123 or k123old,
@@ -135,12 +154,23 @@ class StdLayoutTests(unittest.TestCase):
         with self.create_layout() as td:
             path = Path(td)
             boot = path / 'boot'
+            efistub = path / 'efi/EFI/Gentoo/'
             modules = path / 'lib/modules'
 
             self.assertEqual(
                 sorted(kernel_paths(
                     StdLayout(root=path).find_kernels())),
-                [('1.2.2',
+                [('1.2.1',
+                  [GenericFile(efistub / 'System.map-1.2.1', KFT.SYSTEM_MAP),
+                   GenericFile(efistub / 'config-1.2.1', KFT.CONFIG),
+                   GenericFile(efistub / 'initramfs-1.2.1.img', KFT.INITRAMFS),
+                   KernelImage(efistub / 'vmlinuz-1.2.1.efi'),
+                   ModuleDirectory(modules / '1.2.1'),
+                   GenericFile(modules / '1.2.1/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.1'),
+                 ('1.2.2',
                   [GenericFile(boot / 'System.map-1.2.2', KFT.SYSTEM_MAP),
                    KernelImage(boot / 'vmlinuz-1.2.2'),
                    ModuleDirectory(modules / '1.2.2'),
@@ -178,13 +208,23 @@ class StdLayoutTests(unittest.TestCase):
         with self.create_layout() as td:
             path = Path(td)
             boot = path / 'boot'
+            efistub = path / 'efi/EFI/Gentoo/'
             modules = path / 'lib/modules'
 
             self.assertEqual(
                 sorted(kernel_paths(
                     StdLayout(root=path).find_kernels(
                         exclusions=[KFT.CONFIG]))),
-                [('1.2.2',
+                [('1.2.1',
+                  [GenericFile(efistub / 'System.map-1.2.1', KFT.SYSTEM_MAP),
+                   GenericFile(efistub / 'initramfs-1.2.1.img', KFT.INITRAMFS),
+                   KernelImage(efistub / 'vmlinuz-1.2.1.efi'),
+                   ModuleDirectory(modules / '1.2.1'),
+                   GenericFile(modules / '1.2.1/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.1'),
+                 ('1.2.2',
                   [GenericFile(boot / 'System.map-1.2.2', KFT.SYSTEM_MAP),
                    KernelImage(boot / 'vmlinuz-1.2.2'),
                    ModuleDirectory(modules / '1.2.2'),
@@ -219,13 +259,23 @@ class StdLayoutTests(unittest.TestCase):
         with self.create_layout() as td:
             path = Path(td)
             boot = path / 'boot'
+            efistub = path / 'efi/EFI/Gentoo/'
             modules = path / 'lib/modules'
 
             self.assertEqual(
                 sorted(kernel_paths(
                     StdLayout(root=path).find_kernels(
                         exclusions=[KFT.MODULES]))),
-                [('1.2.2',
+                [('1.2.1',
+                  [GenericFile(efistub / 'System.map-1.2.1', KFT.SYSTEM_MAP),
+                   GenericFile(efistub / 'config-1.2.1', KFT.CONFIG),
+                   GenericFile(efistub / 'initramfs-1.2.1.img', KFT.INITRAMFS),
+                   KernelImage(efistub / 'vmlinuz-1.2.1.efi'),
+                   GenericFile(modules / '1.2.1/../../../usr/src/linux',
+                               KFT.BUILD),
+                   ],
+                  '1.2.1'),
+                 ('1.2.2',
                   [GenericFile(boot / 'System.map-1.2.2', KFT.SYSTEM_MAP),
                    KernelImage(boot / 'vmlinuz-1.2.2'),
                    GenericFile(modules / '1.2.2/../../../usr/src/linux',
@@ -259,13 +309,22 @@ class StdLayoutTests(unittest.TestCase):
         with self.create_layout() as td:
             path = Path(td)
             boot = path / 'boot'
+            efistub = path / 'efi/EFI/Gentoo/'
             modules = path / 'lib/modules'
 
             self.assertEqual(
                 sorted(kernel_paths(
                     StdLayout(root=path).find_kernels(
                         exclusions=[KFT.BUILD]))),
-                [('1.2.2',
+                [('1.2.1',
+                  [GenericFile(efistub / 'System.map-1.2.1', KFT.SYSTEM_MAP),
+                   GenericFile(efistub / 'config-1.2.1', KFT.CONFIG),
+                   GenericFile(efistub / 'initramfs-1.2.1.img', KFT.INITRAMFS),
+                   KernelImage(efistub / 'vmlinuz-1.2.1.efi'),
+                   ModuleDirectory(modules / '1.2.1'),
+                   ],
+                  '1.2.1'),
+                 ('1.2.2',
                   [GenericFile(boot / 'System.map-1.2.2', KFT.SYSTEM_MAP),
                    KernelImage(boot / 'vmlinuz-1.2.2'),
                    ModuleDirectory(modules / '1.2.2'),
@@ -351,7 +410,14 @@ other 1.2.2 [1.2.2]
 - systemmap: {td}/boot/System.map-1.2.2
 - vmlinuz: {td}/boot/vmlinuz-1.2.2
 - modules: {td}/lib/modules/1.2.2
-- build: {td}/lib/modules/1.2.2/../../../usr/src/linux'''.lstrip())
+- build: {td}/lib/modules/1.2.2/../../../usr/src/linux
+other 1.2.1 [1.2.1]
+- systemmap: {td}/efi/EFI/Gentoo/System.map-1.2.1
+- config: {td}/efi/EFI/Gentoo/config-1.2.1
+- initramfs: {td}/efi/EFI/Gentoo/initramfs-1.2.1.img
+- vmlinuz: {td}/efi/EFI/Gentoo/vmlinuz-1.2.1.efi
+- modules: {td}/lib/modules/1.2.1
+- build: {td}/lib/modules/1.2.1/../../../usr/src/linux'''.lstrip())
             self.assert_kernels(Path(td))
 
     def test_main_remove(self) -> None:
@@ -378,6 +444,7 @@ other 1.2.2 [1.2.2]
                       '--root', td, '--debug', '--no-mount']),
                 0)
             self.assert_kernels(Path(td),
+                                k121=False,
                                 k122=False,
                                 k123=False,
                                 k123old=False,
@@ -398,6 +465,7 @@ other 1.2.2 [1.2.2]
                       '--root', td, '--debug', '--no-mount']),
                 0)
             self.assert_kernels(Path(td),
+                                k121=False,
                                 k122=False,
                                 k124=False)
 
@@ -428,6 +496,7 @@ other 1.2.2 [1.2.2]
                       '--root', td, '--debug', '--no-mount']),
                 0)
             self.assert_kernels(Path(td),
+                                k121=False,
                                 k122=False,
                                 k124=False)
 
@@ -447,5 +516,6 @@ other 1.2.2 [1.2.2]
                       '--root', td, '--debug', '--no-mount']),
                 0)
             self.assert_kernels(Path(td),
+                                k121=False,
                                 k122=False,
                                 k124=False)
