@@ -69,6 +69,7 @@ class StdLayoutTests(unittest.TestCase):
         """EFI Stub"""
         test_spec += [
             'efi/EFI/Gentoo/vmlinuz-1.2.1.efi',
+            "efi/EFI/Gentoo/vmlinuz-1.2.1.png",
             'efi/EFI/Gentoo/System.map-1.2.1',
             'efi/EFI/Gentoo/config-1.2.1',
             'efi/EFI/Gentoo/initramfs-1.2.1.img',
@@ -165,6 +166,7 @@ class StdLayoutTests(unittest.TestCase):
                    GenericFile(efistub / 'config-1.2.1', KFT.CONFIG),
                    GenericFile(efistub / 'initramfs-1.2.1.img', KFT.INITRAMFS),
                    KernelImage(efistub / 'vmlinuz-1.2.1.efi'),
+                   GenericFile(efistub / "vmlinuz-1.2.1.png", KFT.MISC),
                    ModuleDirectory(modules / '1.2.1'),
                    GenericFile(modules / '1.2.1/../../../usr/src/linux',
                                KFT.BUILD),
@@ -219,6 +221,7 @@ class StdLayoutTests(unittest.TestCase):
                   [GenericFile(efistub / 'System.map-1.2.1', KFT.SYSTEM_MAP),
                    GenericFile(efistub / 'initramfs-1.2.1.img', KFT.INITRAMFS),
                    KernelImage(efistub / 'vmlinuz-1.2.1.efi'),
+                   GenericFile(efistub / "vmlinuz-1.2.1.png", KFT.MISC),
                    ModuleDirectory(modules / '1.2.1'),
                    GenericFile(modules / '1.2.1/../../../usr/src/linux',
                                KFT.BUILD),
@@ -271,6 +274,7 @@ class StdLayoutTests(unittest.TestCase):
                    GenericFile(efistub / 'config-1.2.1', KFT.CONFIG),
                    GenericFile(efistub / 'initramfs-1.2.1.img', KFT.INITRAMFS),
                    KernelImage(efistub / 'vmlinuz-1.2.1.efi'),
+                   GenericFile(efistub / "vmlinuz-1.2.1.png", KFT.MISC),
                    GenericFile(modules / '1.2.1/../../../usr/src/linux',
                                KFT.BUILD),
                    ],
@@ -321,6 +325,7 @@ class StdLayoutTests(unittest.TestCase):
                    GenericFile(efistub / 'config-1.2.1', KFT.CONFIG),
                    GenericFile(efistub / 'initramfs-1.2.1.img', KFT.INITRAMFS),
                    KernelImage(efistub / 'vmlinuz-1.2.1.efi'),
+                   GenericFile(efistub / "vmlinuz-1.2.1.png", KFT.MISC),
                    ModuleDirectory(modules / '1.2.1'),
                    ],
                   '1.2.1'),
@@ -416,6 +421,7 @@ other 1.2.1 [1.2.1]
 - config: {td}/efi/EFI/Gentoo/config-1.2.1
 - initramfs: {td}/efi/EFI/Gentoo/initramfs-1.2.1.img
 - vmlinuz: {td}/efi/EFI/Gentoo/vmlinuz-1.2.1.efi
+- misc: {td}/efi/EFI/Gentoo/vmlinuz-1.2.1.png
 - modules: {td}/lib/modules/1.2.1
 - build: {td}/lib/modules/1.2.1/../../../usr/src/linux'''.lstrip())
             self.assert_kernels(Path(td))
