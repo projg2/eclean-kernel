@@ -3,6 +3,7 @@
 # Released under the terms of the 2-clause BSD license.
 
 import io
+import distro
 import os
 import tempfile
 import typing
@@ -21,6 +22,8 @@ from test.test_file import write_bzImage
 
 
 TEST_DATA_DIR = Path(__file__).parent / 'data'
+
+distro_name = distro.name() or "Linux"
 
 
 def kernel_paths(kd: typing.List[Kernel]
@@ -68,11 +71,11 @@ class StdLayoutTests(unittest.TestCase):
 
         """EFI Stub"""
         test_spec += [
-            'efi/EFI/Gentoo/vmlinuz-1.2.1.efi',
-            "efi/EFI/Gentoo/vmlinuz-1.2.1.png",
-            'efi/EFI/Gentoo/System.map-1.2.1',
-            'efi/EFI/Gentoo/config-1.2.1',
-            'efi/EFI/Gentoo/initramfs-1.2.1.img',
+            f"efi/EFI/{distro_name}/vmlinuz-1.2.1.efi",
+            f"efi/EFI/{distro_name}/vmlinuz-1.2.1.png",
+            f"efi/EFI/{distro_name}/System.map-1.2.1",
+            f"efi/EFI/{distro_name}/config-1.2.1",
+            f"efi/EFI/{distro_name}/initramfs-1.2.1.img",
         ]
 
         test_spec += [
@@ -93,7 +96,7 @@ class StdLayoutTests(unittest.TestCase):
         td = make_test_files(test_spec)
         path = Path(td.name)
         boot = path / 'boot'
-        efistub = path / 'efi/EFI/Gentoo/'
+        efistub = path / f"efi/EFI/{distro_name}/"
         modules = path / 'lib/modules'
 
         write_bzImage(efistub / 'vmlinuz-1.2.1.efi', b'1.2.1 test')
@@ -127,10 +130,10 @@ class StdLayoutTests(unittest.TestCase):
             'boot/initrd-1.2.3.img.old': k123old,
             'boot/vmlinuz-1.2.2': k122,
             'boot/System.map-1.2.2': k122,
-            'efi/EFI/Gentoo/vmlinuz-1.2.1.efi': k121,
-            'efi/EFI/Gentoo/System.map-1.2.1': k121,
-            'efi/EFI/Gentoo/config-1.2.1': k121,
-            'efi/EFI/Gentoo/initramfs-1.2.1.img': k121,
+            f"efi/EFI/{distro_name}/vmlinuz-1.2.1.efi": k121,
+            f"efi/EFI/{distro_name}/System.map-1.2.1": k121,
+            f"efi/EFI/{distro_name}/config-1.2.1": k121,
+            f"efi/EFI/{distro_name}/initramfs-1.2.1.img": k121,
             'boot/config-1.2.4': k124,
             'lib/modules/1.2.1/test.ko': k121,
             'lib/modules/1.2.2/test.ko': k122,
@@ -155,7 +158,7 @@ class StdLayoutTests(unittest.TestCase):
         with self.create_layout() as td:
             path = Path(td)
             boot = path / 'boot'
-            efistub = path / 'efi/EFI/Gentoo/'
+            efistub = path / f"efi/EFI/{distro_name}/"
             modules = path / 'lib/modules'
 
             self.assertEqual(
@@ -210,7 +213,7 @@ class StdLayoutTests(unittest.TestCase):
         with self.create_layout() as td:
             path = Path(td)
             boot = path / 'boot'
-            efistub = path / 'efi/EFI/Gentoo/'
+            efistub = path / f"efi/EFI/{distro_name}/"
             modules = path / 'lib/modules'
 
             self.assertEqual(
@@ -262,7 +265,7 @@ class StdLayoutTests(unittest.TestCase):
         with self.create_layout() as td:
             path = Path(td)
             boot = path / 'boot'
-            efistub = path / 'efi/EFI/Gentoo/'
+            efistub = path / f"efi/EFI/{distro_name}/"
             modules = path / 'lib/modules'
 
             self.assertEqual(
@@ -313,7 +316,7 @@ class StdLayoutTests(unittest.TestCase):
         with self.create_layout() as td:
             path = Path(td)
             boot = path / 'boot'
-            efistub = path / 'efi/EFI/Gentoo/'
+            efistub = path / f"efi/EFI/{distro_name}/"
             modules = path / 'lib/modules'
 
             self.assertEqual(
@@ -417,11 +420,11 @@ other 1.2.2 [1.2.2]
 - modules: {td}/lib/modules/1.2.2
 - build: {td}/lib/modules/1.2.2/../../../usr/src/linux
 other 1.2.1 [1.2.1]
-- systemmap: {td}/efi/EFI/Gentoo/System.map-1.2.1
-- config: {td}/efi/EFI/Gentoo/config-1.2.1
-- initramfs: {td}/efi/EFI/Gentoo/initramfs-1.2.1.img
-- vmlinuz: {td}/efi/EFI/Gentoo/vmlinuz-1.2.1.efi
-- misc: {td}/efi/EFI/Gentoo/vmlinuz-1.2.1.png
+- systemmap: {td}/efi/EFI/{distro_name}/System.map-1.2.1
+- config: {td}/efi/EFI/{distro_name}/config-1.2.1
+- initramfs: {td}/efi/EFI/{distro_name}/initramfs-1.2.1.img
+- vmlinuz: {td}/efi/EFI/{distro_name}/vmlinuz-1.2.1.efi
+- misc: {td}/efi/EFI/{distro_name}/vmlinuz-1.2.1.png
 - modules: {td}/lib/modules/1.2.1
 - build: {td}/lib/modules/1.2.1/../../../usr/src/linux'''.lstrip())
             self.assert_kernels(Path(td))

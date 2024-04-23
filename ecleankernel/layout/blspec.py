@@ -2,6 +2,7 @@
 # (c) 2020-2023 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
+import distro
 import logging
 import os
 import typing
@@ -136,8 +137,10 @@ class BlSpecLayout(ModuleDirLayout):
                     # Not an UKI
                     continue
 
+                distro_id = distro.id() or "linux"
+
                 ver = basename.removeprefix(f"{self.kernel_id}-"
-                                            ).removeprefix("gentoo-")
+                                            ).removeprefix(f"{distro_id}-")
                 if basename == ver:
                     # Not our UKI
                     continue
