@@ -2,6 +2,7 @@
 # (c) 2011-2020 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
+import distro
 import itertools
 import os
 import os.path
@@ -70,12 +71,14 @@ class StdLayout(ModuleDirLayout):
         kernels: typing.Dict[str, typing.Dict[str, Kernel]] = {}
         other_files: typing.List[typing.Tuple[GenericFile, str]] = []
 
+        distro_name = distro.name() or "Linux"
+
         def find_std_files() -> typing.Iterator:
             for directory in (self.root / 'boot',
-                              self.root / 'boot/EFI/EFI/Gentoo',
-                              self.root / 'boot/efi/EFI/Gentoo',
-                              self.root / 'boot/EFI/Gentoo',
-                              self.root / 'efi/EFI/Gentoo'):
+                              self.root / f"boot/EFI/EFI/{distro_name}",
+                              self.root / f"boot/efi/EFI/{distro_name}",
+                              self.root / f"boot/EFI/{distro_name}",
+                              self.root / f"efi/EFI/{distro_name}"):
                 try:
                     for file in os.listdir(directory):
                         yield directory / file

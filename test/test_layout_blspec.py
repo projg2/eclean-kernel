@@ -2,6 +2,7 @@
 # (c) 2020 Michał Górny <mgorny@gentoo.org>
 # Released under the terms of the 2-clause BSD license.
 
+import distro
 import os
 import tempfile
 import unittest
@@ -21,6 +22,8 @@ from ecleankernel.layout.blspec import BlSpecLayout
 
 from test.test_file import write_bzImage
 from test.test_layout_std import make_test_files, kernel_paths
+
+distro_id = distro.id() or "linux"
 
 
 class BlSpecLayoutTests(unittest.TestCase):
@@ -43,7 +46,7 @@ class BlSpecLayoutTests(unittest.TestCase):
         test_spec = [
             f"boot/{subdir}/EFI/Linux/{entry}-1.2.6.efi",
             f"boot/{subdir}/EFI/Linux/{entry}-1.2.6.png",
-            f"boot/{subdir}/EFI/Linux/{entry}-1.2.5.efi",
+            f"boot/{subdir}/EFI/Linux/{distro_id}-1.2.5.efi",
             f"boot/{subdir}/{entry}/1.2.5/initrd",
             f"boot/{subdir}/{entry}/1.2.5/linux",
             f"boot/{subdir}/{entry}/1.2.4/initrd",
@@ -80,7 +83,8 @@ class BlSpecLayoutTests(unittest.TestCase):
             with open(path / "etc/kernel/entry-token", "w") as f:
                 f.write(f"{self.entry_token}\n")
         write_bzImage(bootsub / f"EFI/Linux/{entry}-1.2.6.efi", b'1.2.6 test')
-        write_bzImage(bootsub / f"EFI/Linux/{entry}-1.2.5.efi", b'1.2.5 test')
+        write_bzImage(bootsub / f"EFI/Linux/{distro_id}-1.2.5.efi",
+                      b'1.2.5 test')
         write_bzImage(bootsub / f"{entry}/1.2.5/linux", b'1.2.5 test')
         write_bzImage(bootsub / f"{entry}/1.2.3/linux", b'1.2.3 test')
         write_bzImage(bootsub / f"{entry}/1.2.2/linux", b'1.2.2 test')
@@ -106,7 +110,7 @@ class BlSpecLayoutTests(unittest.TestCase):
         subdir = 'EFI/' if efi_subdir else ''
         files = {
             f'boot/{subdir}/EFI/Linux/{self.machine_id}-1.2.6.efi': k126,
-            f'boot/{subdir}/EFI/Linux/{self.machine_id}-1.2.5.efi': k125,
+            f'boot/{subdir}/EFI/Linux/{distro_id}-1.2.5.efi': k125,
             f'boot/{subdir}{self.machine_id}/1.2.5/initrd': k125,
             f'boot/{subdir}{self.machine_id}/1.2.5/linux': k125,
             f'boot/{subdir}{self.machine_id}/1.2.5': k125,
@@ -235,7 +239,7 @@ class BlSpecLayoutTests(unittest.TestCase):
                    ],
                   '1.2.5'),
                  ('1.2.5',
-                  [KernelImage(ukipath / f"{self.machine_id}-1.2.5.efi"),
+                  [KernelImage(ukipath / f"{distro_id}-1.2.5.efi"),
                    ModuleDirectory(modules / '1.2.5'),
                    GenericFile(modules / '1.2.5/../../../usr/src/linux',
                                KFT.BUILD),
@@ -305,7 +309,7 @@ class BlSpecLayoutTests(unittest.TestCase):
                    ],
                   '1.2.5'),
                  ('1.2.5',
-                  [KernelImage(ukipath / f"{self.machine_id}-1.2.5.efi"),
+                  [KernelImage(ukipath / f"{distro_id}-1.2.5.efi"),
                    ModuleDirectory(modules / '1.2.5'),
                    GenericFile(modules / '1.2.5/../../../usr/src/linux',
                                KFT.BUILD),
@@ -369,7 +373,7 @@ class BlSpecLayoutTests(unittest.TestCase):
                    ],
                   '1.2.5'),
                  ('1.2.5',
-                  [KernelImage(ukipath / f"{self.machine_id}-1.2.5.efi"),
+                  [KernelImage(ukipath / f"{distro_id}-1.2.5.efi"),
                    GenericFile(modules / '1.2.5/../../../usr/src/linux',
                                KFT.BUILD),
                    ],
@@ -432,7 +436,7 @@ class BlSpecLayoutTests(unittest.TestCase):
                    ],
                   '1.2.5'),
                  ('1.2.5',
-                  [KernelImage(ukipath / f"{self.machine_id}-1.2.5.efi"),
+                  [KernelImage(ukipath / f"{distro_id}-1.2.5.efi"),
                    ModuleDirectory(modules / '1.2.5'),
                    ],
                   '1.2.5'),
@@ -498,7 +502,7 @@ class BlSpecLayoutTests(unittest.TestCase):
                    ],
                   '1.2.5'),
                  ('1.2.5',
-                  [KernelImage(ukipath / f"{self.machine_id}-1.2.5.efi"),
+                  [KernelImage(ukipath / f"{distro_id}-1.2.5.efi"),
                    ModuleDirectory(modules / '1.2.5'),
                    GenericFile(modules / '1.2.5/../../../usr/src/linux',
                                KFT.BUILD),
