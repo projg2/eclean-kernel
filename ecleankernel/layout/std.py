@@ -48,6 +48,9 @@ class StdLayout(ModuleDirLayout):
         '.lz',
         '.xz',
 
+        # refind
+        ".png",
+
         # efistub
         '.efi',
     ]
@@ -105,6 +108,9 @@ class StdLayout(ModuleDirLayout):
             except UnrecognizedKernelError:
                 # fall back to filename
                 for ftype, prefix in self.prefixes:
+                    # kernel refind icon has same name as kernel +'.png'
+                    if fn.endswith(".png"):
+                        ftype = KernelFileType.MISC
                     if ftype not in exclusions:
                         if fn.startswith(prefix):
                             other_files.append(
