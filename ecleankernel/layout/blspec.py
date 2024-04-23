@@ -131,16 +131,16 @@ class BlSpecLayout(ModuleDirLayout):
         # collect from ESP/Linux
         if self.ukidir.is_dir():
             for file in os.listdir(self.ukidir):
-                if not file.endswith(".efi"):
+                basename = file.removesuffix(".efi")
+                if file == basename:
                     # Not an UKI
                     continue
 
-                ver = file.removeprefix(f"{self.kernel_id}-"
-                                        ).removeprefix("gentoo-")
-                if file == ver:
+                ver = basename.removeprefix(f"{self.kernel_id}-"
+                                            ).removeprefix("gentoo-")
+                if basename == ver:
                     # Not our UKI
                     continue
-                ver = ver.removesuffix(".efi")
 
                 kernels[(ver, "uki")] = self.append_kernel_files(
                         KernelFileType.KERNEL,
@@ -148,6 +148,12 @@ class BlSpecLayout(ModuleDirLayout):
                         Kernel(ver, layout="uki"),
                         ver, module_dict,
                         exclusions)
+
+                uki_icon = self.ukidir / f"{basename}.png"
+                if (KernelFileType.MISC not in exclusions and
+                        os.path.isfile(uki_icon)):
+                    kernels[(ver, "uki")].all_files.append(GenericFile(
+                        uki_icon, KernelFileType.MISC))
 
         # merge unassociated modules into kernel groups
         for mkv, fobjs in module_dict.items():
