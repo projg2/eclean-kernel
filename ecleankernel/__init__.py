@@ -1,6 +1,5 @@
-# vim:fileencoding=utf-8
 # (c) 2011-2023 Michał Górny <mgorny@gentoo.org>
-# Released under the terms of the 2-clause BSD license.
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 """Installed kernel cleanup tool"""
 
