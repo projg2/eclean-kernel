@@ -36,6 +36,7 @@ name = "ecleankernel"
 
 [tool.flit.sdist]
 include = [
+    "COPYING",
     "tox.ini",
     "test/*.py",
 ]
