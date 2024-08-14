@@ -79,7 +79,8 @@ def get_removal_list(kernels: typing.List[Kernel],
         remove_kernels.setdefault(k, []).append('vmlinuz does not exist')
     if len(remove_kernels) == len(kernels):
         raise SystemError(
-            'No vmlinuz found. This seems ridiculous, aborting.')
+            "No vmlinuz found. This is a serious problem, and it would "
+            "mean removing all remaining files. Aborting.")
 
     if limit is None or limit > 0:
         if not destructive:
