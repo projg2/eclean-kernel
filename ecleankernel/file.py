@@ -199,11 +199,12 @@ class KernelImage(GenericFile):
 
     def read_version_from_raw(self,
                               f: typing.IO[bytes],
+                              size: typing.Optional[int] = None,
                               ) -> typing.Optional[bytes]:
         """Read version from raw kernel image"""
 
         # check if it's compressed first
-        b = self.decompress_raw(f)
+        b = self.decompress_raw(f, size)
         # unlike with bzImage, the raw kernel binary has no header
         # that includes the version, so we parse the version message
         # that appears on boot
@@ -226,6 +227,15 @@ class KernelImage(GenericFile):
             buf = f.read(0x40)
             if len(buf) != 0x40 or buf[:2] != b"MZ":
                 return None
+
+            # handle EFI zboot image
+            # see kernel source code
+            # drivers/firmware/efi/libstub/zboot-header.S
+            if buf[4:8] == b"zimg":
+                offset, size = struct.unpack_from("<LL", buf, 8)
+                f.seek(offset)
+                return self.read_version_from_raw(f, size)
+
             coff_offset = struct.unpack_from("<L", buf, 0x3c)[0]
 
             # at offset, we find PE\0\0 signature and COFF file header
