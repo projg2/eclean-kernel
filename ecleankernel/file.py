@@ -111,7 +111,10 @@ class KernelImage(GenericFile):
         super().__init__(path, KernelFileType.KERNEL)
         self.internal_version = self.read_internal_version()
 
-    def decompress_raw(self, f: typing.IO[bytes]) -> bytes:
+    def decompress_raw(self,
+                       f: typing.IO[bytes],
+                       size: typing.Optional[int] = None,
+                       ) -> bytes:
         magic_dict = {
             b'\x1f\x8b\x08': 'gzip',
             b'\x42\x5a\x68': 'bz2',
@@ -122,8 +125,11 @@ class KernelImage(GenericFile):
             b'\x89\x4c\x5a\x4f\x00\x0d\x0a\x1a\x0a': 'lzo',
         }
         maxlen = max(len(x) for x in magic_dict)
+        if size and maxlen > size:
+            return f.read(size)
         with autorewind(f):
             header = f.read(maxlen)
+        buffer = f.read(size or -1)
         for magic, comp in magic_dict.items():
             if header.startswith(magic):
                 try:
@@ -137,21 +143,15 @@ class KernelImage(GenericFile):
                     # Technically a redundant import, this is just
                     # to make your IDE happy :)
                     import zstandard
-                    reader = zstandard.ZstdDecompressor().stream_reader(f)
-                    decomp = b''
-                    while True:
-                        chunk = reader.read(1024 * 1024)
-                        if not chunk:
-                            break
-                        decomp += chunk
-                    return decomp
+                    decompress = zstandard.ZstdDecompressor().decompressobj()
+                    return decompress(buffer)
                 elif comp == 'lzma':
                     # Using .decompress() causes an error because of
                     # no end-of-stream marker
-                    return LZMADecompressor().decompress(f.read())
+                    return LZMADecompressor().decompress(buffer)
                 else:
-                    return getattr(mod, 'decompress')(f.read())
-        return f.read()
+                    return getattr(mod, 'decompress')(buffer)
+        return buffer
 
     def read_internal_version(self) -> str:
         """Read version from the kernel file"""
