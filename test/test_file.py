@@ -4,6 +4,7 @@
 import gzip
 import hashlib
 import os
+import struct
 import tempfile
 import unittest
 
@@ -98,6 +99,22 @@ def write_efistub(path: Path,
             f.write(version_line)
 
 
+def write_efi_zboot(path: Path,
+                    version_line: bytes,
+                    ) -> None:
+    """Write an EFI zboot kernel image at `path`, with `version_line`"""
+    # generate a compressed image as our payload
+    write_compress(path, version_line)
+    b = path.read_bytes()
+
+    with open(path, "wb") as f:
+        f.write(b"MZ\0\0zimg")
+        f.write(struct.pack("<LL", 0x40, len(b)))
+        f.write(8 * b"\0" + b"gzip" + 4 * b"\0")
+        f.write(0x20 * b"\0")
+        f.write(b)
+
+
 class KernelImageTests(unittest.TestCase):
     def setUp(self) -> None:
         self.td = tempfile.TemporaryDirectory()
@@ -143,6 +160,13 @@ class KernelImageTests(unittest.TestCase):
     def test_read_internal_version_efistub_uname_nowhitespace(self) -> None:
         path = Path(self.td.name) / "vmlinuz"
         write_efistub(path, b"1.2.3", True)
+        self.assertEqual(
+            KernelImage(path).read_internal_version(),
+            "1.2.3")
+
+    def test_read_internal_version_efi_zboot(self) -> None:
+        path = Path(self.td.name) / "vmlinuz"
+        write_efi_zboot(path, b"Linux version 1.2.3 built on test")
         self.assertEqual(
             KernelImage(path).read_internal_version(),
             "1.2.3")
