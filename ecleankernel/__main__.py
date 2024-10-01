@@ -28,6 +28,8 @@ from ecleankernel.layout.blspec import BlSpecLayout
 from ecleankernel.layout.std import StdLayout
 from ecleankernel.sort import MTimeSort, VersionSort
 
+from gentoolkit.helpers import FileOwner
+
 ecleankern_desc = '''
 Remove old kernel versions, keeping either N newest kernels (with -n)
 or only those which are referenced by a bootloader (with -a).
@@ -144,6 +146,9 @@ def main(argv: typing.List[str]) -> int:
                        help=f'Exclude kernel parts from being removed '
                             f'(comma-separated, supported parts: '
                             f'{", ".join(kernel_parts)})')
+    group.add_argument('--write-eclean-kernel-preserved-set',
+                       action='store_true',
+                       help='Write /etc/portage/sets/eclean-kernel-preserved.')
 
     all_args = []
     config_dirs = os.environ.get('XDG_CONFIG_DIRS', '/etc/xdg').split(':')
@@ -254,6 +259,31 @@ def main(argv: typing.List[str]) -> int:
                 sorter=sorter,
                 bootloader=bootloader,
                 destructive=args.destructive)
+
+            if args.write_eclean_kernel_preserved_set or os.getenv('ECLEAN_KERNEL_PRESERVED_SET', 'false') == 'true':
+                preserved_pkgs = []
+                remaining_kernels = [k for k in kernels
+                                     if k not in removals]
+                file_owner = FileOwner(early_out=True)
+                for k in remaining_kernels:
+                    module_dir = Path(f"/lib/modules/{k.real_kv}/")
+                    if not module_dir.is_dir:
+                        continue
+
+                    owners = file_owner((str(module_dir),))
+                    if owners:
+                        pkg = owners[0][0]
+                        preserved_pkgs.append(pkg)
+                if preserved_pkgs:
+                    set_dir = Path("/etc/portage/sets/")
+                    if not set_dir.exists:
+                        set_dir.mkdir()
+                    set_file = set_dir / "eclean-kernel-preserved"
+
+                    preserved_set  = ''.join([f"={pkg}\n" for pkg in preserved_pkgs])
+                    if not set_file.exists() or set_file.read_text() != preserved_set:
+                        set_file.write_text(preserved_set)
+
 
             has_kernel_install = False
             has_bootloader_postrm = False
