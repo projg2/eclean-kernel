@@ -41,8 +41,9 @@ class BlSpecLayout(ModuleDirLayout):
                  root: Path
                  ) -> None:
         super().__init__(root)
-        # TODO: according to bootctl(1), we should fall back to IMAGE_ID=
-        # and then ID= from os-release
+
+        self.distro_id = distro.id() or "linux"
+
         for path in ("etc/kernel/entry-token", "etc/machine-id"):
             try:
                 with open(root / path) as f:
@@ -51,7 +52,7 @@ class BlSpecLayout(ModuleDirLayout):
             except FileNotFoundError:
                 pass
         else:
-            raise LayoutNotFound("/etc/machine-id not found")
+            self.kernel_id = self.distro_id
 
         for d in self.potential_dirs:
             # Present if type 1
@@ -137,10 +138,9 @@ class BlSpecLayout(ModuleDirLayout):
                     # Not an UKI
                     continue
 
-                distro_id = distro.id() or "linux"
-
                 ver = basename.removeprefix(f"{self.kernel_id}-"
-                                            ).removeprefix(f"{distro_id}-")
+                                            ).removeprefix(f"{self.distro_id}-"
+                                                           )
                 if basename == ver:
                     # Not our UKI
                     continue
