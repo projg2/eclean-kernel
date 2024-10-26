@@ -11,7 +11,7 @@ from ecleankernel.bootloader import Bootloader, BootloaderNotFound
 class LILO(Bootloader):
     name = 'lilo'
     kernel_re = r'^\s*image\s*=\s*(?P<path>.+)\s*$'
-    def_path: typing.Tuple[str, ...] = ('/etc/lilo.conf',)
+    def_path: typing.Tuple[typing.Optional[str], ...] = ('/etc/lilo.conf',)
 
     def __init__(self,
                  path: typing.Optional[str] = None
@@ -23,6 +23,8 @@ class LILO(Bootloader):
             paths = (paths,)
 
         for p in paths:
+            if p is None:
+                continue
             try:
                 with open(p) as f:
                     logging.debug(f'{p} found')

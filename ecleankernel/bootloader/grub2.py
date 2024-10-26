@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import logging
+import os
 import subprocess
 import typing
 
@@ -17,7 +18,10 @@ grub2_autogen_header = '''#
 class GRUB2(GRUB):
     name = 'grub2'
     kernel_re = r'^\s*linux\s*(\([^)]+\))?(?P<path>\S+)'
-    def_path = ('/boot/grub/grub.cfg', '/boot/grub2/grub.cfg')
+    def_path = (os.environ.get("GRUB_CFG"),
+                '/boot/grub/grub.cfg',
+                '/boot/grub2/grub.cfg',
+                )
 
     def __init__(self) -> None:
         super().__init__()
